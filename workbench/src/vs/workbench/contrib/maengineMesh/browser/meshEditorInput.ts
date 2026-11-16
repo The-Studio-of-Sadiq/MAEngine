@@ -23,6 +23,10 @@ export class MeshEditorInput extends EditorInput {
 		return MeshEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return MeshEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

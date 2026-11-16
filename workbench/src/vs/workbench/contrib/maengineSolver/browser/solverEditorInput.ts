@@ -23,6 +23,10 @@ export class SolverEditorInput extends EditorInput {
 		return SolverEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return SolverEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

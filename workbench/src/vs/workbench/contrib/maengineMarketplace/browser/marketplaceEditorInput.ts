@@ -23,6 +23,10 @@ export class MarketplaceEditorInput extends EditorInput {
 		return MarketplaceEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return MarketplaceEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

@@ -5,7 +5,8 @@
 
 import assert from 'assert';
 import { timeout } from '../../../../../base/common/async.js';
-import { Emitter } from '../../../../../base/common/event.js';
+import { Emitter, Event } from '../../../../../base/common/event.js';
+import { URI } from '../../../../../base/common/uri.js';
 import { joinPath } from '../../../../../base/common/resources.js';
 import { mock } from '../../../../../base/test/common/mock.js';
 import { ensureNoDisposablesAreLeakedInTestSuite } from '../../../../../base/test/common/utils.js';
@@ -16,13 +17,24 @@ import { FileChangesEvent, FileChangeType } from '../../../../../platform/files/
 import { IEditableData } from '../../../../common/views.js';
 import { IHostService } from '../../../../services/host/browser/host.js';
 import { IWorkbenchEnvironmentService } from '../../../../services/environment/common/environmentService.js';
-import { TestSaengineProjectService, workbenchInstantiationService } from '../../../../test/browser/workbenchTestServices.js';
-import { ISaengineProjectService } from '../../../../services/saengineProject/common/saengineProject.js';
+import { workbenchInstantiationService } from '../../../../test/browser/workbenchTestServices.js';
+import { IMAEngineProjectService } from '../../../../services/maengineProject/common/maengineProject.js';
 import { NullFilesConfigurationService, TestFileService } from '../../../../test/common/workbenchTestServices.js';
 import { ExplorerService } from '../../browser/explorerService.js';
 import { IExplorerView } from '../../browser/files.js';
 import { ExplorerItem, NewExplorerItem } from '../../common/explorerModel.js';
 import { SESSIONS_FILES_VIEW_ID, VIEW_ID } from '../../common/files.js';
+
+class TestProjectService implements IMAEngineProjectService {
+	declare readonly _serviceBrand: undefined;
+	readonly project = undefined;
+	readonly onDidChangeProject = Event.None;
+	readonly protectedResources: URI[] = [];
+	async findProject() { return undefined; }
+	async openProject() { }
+	async createProject(): Promise<never> { throw new Error('not supported'); }
+	isProtected(resource: URI): boolean { return this.protectedResources.some(r => r.toString() === resource.toString()); }
+}
 
 suite('Files - ExplorerService', () => {
 	const store = ensureNoDisposablesAreLeakedInTestSuite();
@@ -32,7 +44,7 @@ suite('Files - ExplorerService', () => {
 	let item: NewExplorerItem;
 	let calls: string[];
 	let focusDuringRender: boolean;
-	let projectService: TestSaengineProjectService;
+	let projectService: TestProjectService;
 	let bulkEdits: ResourceFileEdit[][];
 
 	const editableData: IEditableData = {
@@ -53,8 +65,8 @@ suite('Files - ExplorerService', () => {
 		instantiationService.stub(IHostService, { onDidChangeFocus: focusChanged.event });
 		bulkEdits = [];
 		instantiationService.stub(IBulkEditService, { apply: async (edits: ResourceFileEdit[]) => { bulkEdits.push(edits); return { ariaSummary: '', isApplied: true }; } });
-		projectService = new TestSaengineProjectService();
-		instantiationService.stub(ISaengineProjectService, projectService);
+		projectService = new TestProjectService();
+		instantiationService.stub(IMAEngineProjectService, projectService);
 		explorerService = store.add(instantiationService.createInstance(ExplorerService));
 		explorerService.registerView(new class extends mock<IExplorerView>() {
 			override async setEditable(_stat: ExplorerItem, isEditing: boolean): Promise<void> {

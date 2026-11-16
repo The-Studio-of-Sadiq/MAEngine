@@ -23,6 +23,10 @@ export class PhysicsEditorInput extends EditorInput {
 		return PhysicsEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return PhysicsEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

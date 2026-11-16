@@ -23,6 +23,10 @@ export class ResultsEditorInput extends EditorInput {
 		return ResultsEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return ResultsEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

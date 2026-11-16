@@ -23,6 +23,10 @@ export class MaterialEditorInput extends EditorInput {
 		return MaterialEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return MaterialEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

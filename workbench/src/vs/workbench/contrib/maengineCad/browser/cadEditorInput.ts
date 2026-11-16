@@ -23,6 +23,10 @@ export class CadEditorInput extends EditorInput {
 		return CadEditorInput.ID;
 	}
 
+	override get editorId(): string {
+		return CadEditorInput.EDITOR_ID;
+	}
+
 	override get capabilities(): EditorInputCapabilities {
 		return EditorInputCapabilities.None;
 	}

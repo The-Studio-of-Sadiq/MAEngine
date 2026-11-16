@@ -19,8 +19,6 @@ import { ITreeNode, ITreeFilter, TreeVisibility, IAsyncDataSource, ITreeSorter, 
 import { IContextMenuService, IContextViewService } from '../../../../../platform/contextview/browser/contextView.js';
 import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
 import { IConfigurationChangeEvent, IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
-import { IProjectFlowPosition, PROJECT_FLOW_GAP, projectFlowPosition } from '../../../../services/saengineProject/common/projectFlow.js';
-import { ISaengineProjectService } from '../../../../services/saengineProject/common/saengineProject.js';
 import { ExplorerFindProviderActive, IFilesConfiguration, UndoConfirmLevel } from '../../common/files.js';
 import { dirname, joinPath, distinctParents, relativePath } from '../../../../../base/common/resources.js';
 import { InputBox, MessageType } from '../../../../../base/browser/ui/inputbox/inputBox.js';
@@ -81,13 +79,8 @@ export class ExplorerDelegate implements IListVirtualDelegate<ExplorerItem> {
 
 	static readonly ITEM_HEIGHT = 22;
 
-	/** `flow` places SAEngine project part folders in the project's flowchart. */
-	constructor(private readonly flow?: (element: ExplorerItem) => IProjectFlowPosition | undefined) { }
-
 	getHeight(element: ExplorerItem): number {
-		// Every part folder after the first has room above it for the arrow from the previous one.
-		const position = this.flow?.(element);
-		return position?.node && !position.first ? ExplorerDelegate.ITEM_HEIGHT + PROJECT_FLOW_GAP : ExplorerDelegate.ITEM_HEIGHT;
+		return ExplorerDelegate.ITEM_HEIGHT;
 	}
 
 	getTemplateId(element: ExplorerItem): string {
@@ -852,7 +845,6 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ISaengineProjectService private readonly saengineProjectService: ISaengineProjectService,
 	) {
 		this.config = this.configurationService.getValue<IFilesConfiguration>();
 
@@ -998,31 +990,7 @@ export class FilesRenderer implements ICompressibleTreeRenderer<ExplorerItem, Fu
 		}
 	}
 
-	/**
-	 * Draws a SAEngine project's part folders as a flowchart: each part folder is a node, an
-	 * arrow points down into every node after the first, and a line runs down through an
-	 * expanded part's contents to the next node.
-	 */
-	private renderProjectFlow(stat: ExplorerItem, templateData: IFileTemplateData): void {
-		const row = templateData.container.parentElement;
-		if (!row) {
-			return;
-		}
-		const position = projectFlowPosition(this.saengineProjectService.project, stat.resource);
-		row.classList.toggle('saengine-flow-node', !!position?.node);
-		row.classList.toggle('saengine-flow-in', !!position?.node && !position.first);
-		row.classList.toggle('saengine-flow-out', !!position?.node && !position.last);
-		row.classList.toggle('saengine-flow-through', !!position && !position.node && !position.last);
-		if (position) {
-			// The connector runs through the chevron of the part folders.
-			const indent = this.configurationService.getValue<number>('workbench.tree.indent') ?? 8;
-			const partDepth = this.explorerService.roots.length > 1 ? 2 : 1;
-			row.style.setProperty('--saengine-flow-x', `${8 + (partDepth - 1) * indent + 8}px`);
-		}
-	}
-
 	private renderStat(stat: ExplorerItem, label: string | string[], domId: string | undefined, filterData: FuzzyScore | undefined, templateData: IFileTemplateData): void {
-		this.renderProjectFlow(stat, templateData);
 		templateData.label.element.style.display = 'flex';
 		const extraClasses = ['explorer-item'];
 		if (this.explorerService.isCut(stat)) {
