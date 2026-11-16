@@ -1,0 +1,18 @@
+{
+	"schema": 1,
+	"name": "Cantilever Beam Bending Study",
+	"created": "2026-11-13T07:30:00.000Z",
+	"unitSystem": "mm_N_MPa_tonne_s",
+	"parts": [
+		"settings",
+		"geometry",
+		"materials",
+		"mesh",
+		"physics",
+		"solver",
+		"results",
+		"marketplace",
+		"reports"
+	]
+}
+

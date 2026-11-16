@@ -1,0 +1,7 @@
+2026-11-11 08:12:42.225 [info] [node-compile-cache] main: packaged cache inactive (status: missing, configured: C:\Users\rashe\Documents\mechastudio\VSCode-win32-x64\resources\app\out\vs\base\node-compile-cache\main, active: none)
+2026-11-11 08:12:42.229 [info] StorageMainService: creating application shared storage
+2026-11-11 08:12:42.444 [info] [shared storage] Creating shared storage database at 'c:\Users\rashe\.maengine-shared\sharedStorage\state.vscdb' (wasCreated: false)
+2026-11-11 08:12:42.444 [info] [shared storage] Initializing fallback application storage (path: c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage\state.vscdb)
+2026-11-11 08:12:42.556 [info] [shared storage] Fallback application storage initialized with 51 items
+2026-11-11 08:12:42.616 [info] update#setState disabled
+2026-11-11 08:12:42.616 [info] update#ctor - updates are disabled as there is no update URL

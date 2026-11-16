@@ -35,6 +35,7 @@ class CalculixDeckGenerator:
         output_inp_path: str,
         default_material: Optional[str] = None,
         custom_template: Optional[str] = None,
+        nset_node_counts: Optional[Dict[str, int]] = None,
     ) -> str:
         """
         Renders the complete CalculiX .inp file.
@@ -61,10 +62,23 @@ class CalculixDeckGenerator:
 
         template = self.env.get_template(template_name)
 
+        # *CLOAD applies its value to EVERY node of the set, so force loads are divided by the
+        # set's node count. A missing count must fail loudly: silently using 1 would multiply
+        # the applied force by the number of nodes.
+        safe_node_counts = dict(nset_node_counts or {})
+        for step in project.steps:
+            for load in step.loads:
+                if load.type.value == "force" and safe_node_counts.get(load.target_set, 0) <= 0:
+                    raise ValueError(
+                        f"Force load '{load.name}' targets node set '{load.target_set}', "
+                        "but its node count is unknown or zero; cannot distribute the force."
+                    )
+
         rendered_deck = template.render(
             project=project,
             mesh_file=mesh_file_rel_path,
             sections=sections,
+            nset_node_counts=safe_node_counts,
         )
 
         os.makedirs(os.path.dirname(os.path.abspath(output_inp_path)), exist_ok=True)

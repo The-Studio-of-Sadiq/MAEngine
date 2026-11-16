@@ -1,0 +1,10 @@
+2026-11-11 08:24:48.828 [info] [RemoteAgentHost] Reconciling: desired=[], current=[]
+2026-11-11 08:24:48.895 [info] [AgentHost:renderer] Acquiring MessagePort to agent host...
+2026-11-11 08:24:49.792 [info] [AgentHost:renderer] MessagePort acquired, creating client...
+2026-11-11 08:24:50.044 [info] Started local extension host with pid 34824.
+2026-11-11 08:24:50.140 [info] [AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false
+2026-11-11 08:24:50.379 [info] [RemoteAgentHost] Reconciling: desired=[], current=[]
+2026-11-11 08:24:55.181 [info] [AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false
+2026-11-11 08:24:59.881 [error] [LocalProcessExtensionHost]: Extension host did not start in 10 seconds (debugBrk: false)
+2026-11-11 08:25:18.947 [warning] [DefaultAccount] Attempt 1 to get sessions failed: Timed out waiting for authentication provider 'github' to register.
+2026-11-11 08:25:18.948 [warning] [chat-stt] could not refresh GitHub session state for cloud dictation Timed out waiting for authentication provider 'github' to register.

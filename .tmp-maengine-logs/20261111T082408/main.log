@@ -1,0 +1,8 @@
+2026-11-11 08:24:09.512 [info] [node-compile-cache] main: packaged cache inactive (status: development, configured: C:\Users\rashe\Documents\mechastudio\workbench\out\vs\base\node-compile-cache\main, active: none)
+2026-11-11 08:24:09.512 [info] StorageMainService: creating application shared storage
+2026-11-11 08:24:09.830 [info] [CSS_DEV] DONE, 522 css modules (476ms)
+2026-11-11 08:24:10.555 [info] update#setState disabled
+2026-11-11 08:24:10.580 [info] [shared storage] Creating shared storage database at 'c:\Users\rashe\.maengine-shared\sharedStorage\state.vscdb' (wasCreated: false)
+2026-11-11 08:24:10.581 [info] [shared storage] Initializing fallback application storage (path: c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage\state.vscdb)
+2026-11-11 08:24:10.681 [info] [shared storage] Fallback application storage initialized with 51 items
+2026-11-11 08:24:48.910 [info] AgentHostProcessManager: agent host started

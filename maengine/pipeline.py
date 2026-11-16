@@ -28,6 +28,8 @@ class SimulationPipeline:
         self.screenshot_path = os.path.join(self.work_dir, f"{project.name}_contour.png")
 
         self.runner = CalculixRunner()
+        self.mesh_stats: Optional[Dict[str, Any]] = None
+        self.nset_node_counts: Dict[str, int] = {}
 
     @classmethod
     def from_yaml(cls, yaml_path: str, work_dir: Optional[str] = None, output_dir: Optional[str] = None) -> "SimulationPipeline":
@@ -62,18 +64,69 @@ class SimulationPipeline:
                 config=self.project.mesh,
                 surface_tags=surface_tags if surface_tags else None,
             )
+        self.mesh_stats = stats
+        self.nset_node_counts = stats.get("nset_node_counts", {})
         return stats
 
-    def compile_solver_deck(self) -> str:
+    @staticmethod
+    def _parse_nset_node_counts(mesh_path: str) -> Dict[str, int]:
+        counts: Dict[str, int] = {}
+        if not os.path.exists(mesh_path):
+            return counts
+        curr_nset = None
+        is_generate = False
+        curr_nodes = set()
+        with open(mesh_path, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                trimmed = line.strip()
+                if trimmed.upper().startswith("*NSET"):
+                    if curr_nset and curr_nodes:
+                        counts[curr_nset] = len(curr_nodes)
+                    curr_nset = None
+                    is_generate = "GENERATE" in trimmed.upper()
+                    curr_nodes = set()
+                    for part in trimmed.split(","):
+                        if "NSET=" in part.upper():
+                            curr_nset = part.split("=")[-1].strip()
+                elif trimmed.startswith("*"):
+                    if curr_nset and curr_nodes:
+                        counts[curr_nset] = len(curr_nodes)
+                    curr_nset = None
+                    is_generate = False
+                    curr_nodes = set()
+                elif curr_nset and trimmed:
+                    if is_generate:
+                        parts = [int(p.strip()) for p in trimmed.split(",") if p.strip()]
+                        if len(parts) >= 2:
+                            step = parts[2] if len(parts) >= 3 else 1
+                            counts[curr_nset] = (parts[1] - parts[0]) // step + 1
+                        curr_nset = None
+                        is_generate = False
+                    else:
+                        for tok in trimmed.split(","):
+                            tok = tok.strip()
+                            if tok.isdigit():
+                                curr_nodes.add(int(tok))
+            if curr_nset and curr_nodes:
+                counts[curr_nset] = len(curr_nodes)
+        return counts
+
+    def compile_solver_deck(self, nset_node_counts: Optional[Dict[str, int]] = None) -> str:
         """
         Compiles the CalculiX .inp file from project schema and generated mesh.
         """
         generator = CalculixDeckGenerator()
         rel_mesh = os.path.basename(self.mesh_path)
+        node_counts = nset_node_counts if nset_node_counts is not None else self.nset_node_counts
+        if not node_counts and os.path.exists(self.mesh_path):
+            node_counts = self._parse_nset_node_counts(self.mesh_path)
+            self.nset_node_counts = node_counts
+
         return generator.generate_deck(
             project=self.project,
             mesh_file_rel_path=rel_mesh,
             output_inp_path=self.deck_path,
+            nset_node_counts=node_counts,
         )
 
     def solve(
@@ -117,7 +170,7 @@ class SimulationPipeline:
         CAD Mesh -> Deck Gen -> Solve -> Post-Process (VTU/glTF/PNG).
         """
         mesh_stats = self.generate_mesh(cad_file_path=cad_file_path)
-        deck_file = self.compile_solver_deck()
+        deck_file = self.compile_solver_deck(nset_node_counts=mesh_stats.get("nset_node_counts"))
         solve_result = self.solve()
 
         if not solve_result["success"]:

@@ -52,7 +52,7 @@ export class FileStorage extends Disposable {
 	private async doInit(): Promise<void> {
 		try {
 			this.lastSavedStorageContents = (await this.fileService.readFile(this.storagePath)).value.toString();
-			this.storage = JSON.parse(this.lastSavedStorageContents);
+			this.storage = JSON.parse(this.lastSavedStorageContents.replace(/^\uFEFF/, ''));
 		} catch (error) {
 			if ((<FileOperationError>error).fileOperationResult !== FileOperationResult.FILE_NOT_FOUND) {
 				this.logService.error(error);

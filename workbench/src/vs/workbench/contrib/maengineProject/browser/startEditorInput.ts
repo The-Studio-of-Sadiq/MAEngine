@@ -15,10 +15,22 @@ export class StartEditorInput extends EditorInput {
 	static readonly ID: string = 'workbench.input.maengine.start';
 	static readonly EDITOR_ID: string = 'workbench.editors.maengine.startEditor';
 
-	static readonly instance = new StartEditorInput();
+	private static _instance: StartEditorInput | undefined;
+	static get instance(): StartEditorInput {
+		if (!StartEditorInput._instance || StartEditorInput._instance.isDisposed()) {
+			StartEditorInput._instance = new StartEditorInput();
+		}
+		return StartEditorInput._instance;
+	}
+
+	readonly resource: URI = URI.from({ scheme: 'maengine', authority: 'start', path: '/workbench-home' });
 
 	override get typeId(): string {
 		return StartEditorInput.ID;
+	}
+
+	override get editorId(): string {
+		return StartEditorInput.EDITOR_ID;
 	}
 
 	override get capabilities(): EditorInputCapabilities {
@@ -26,7 +38,7 @@ export class StartEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('startEditor.name', "Start Page");
+		return localize('startEditor.name', "MAEngine Home");
 	}
 
 	override getIcon(): ThemeIcon {
@@ -34,7 +46,7 @@ export class StartEditorInput extends EditorInput {
 	}
 
 	override matches(other: EditorInput | IUntypedEditorInput): boolean {
-		return other instanceof StartEditorInput;
+		return super.matches(other) || other instanceof StartEditorInput;
 	}
 }
 

@@ -31,6 +31,9 @@ def cmd_run(args):
     print(f"[*] Loading MAEngine simulation specification from: {args.yaml}")
     pipeline = SimulationPipeline.from_yaml(args.yaml, output_dir=args.output_dir)
     res = pipeline.run_all()
+    if not res.get("success", False):
+        print(f"\n[-] Simulation Pipeline Failed at stage '{res.get('stage', 'unknown')}': {res.get('error', 'Unknown error')}")
+        return
     print("\n[+] Simulation Pipeline Completed Successfully!")
     print(f"    - Inp Deck:      {res['inp_path']}")
     print(f"    - VTU Grid:      {res['vtu_path']}")
@@ -64,7 +67,11 @@ def cmd_post(args):
     print(f"[*] Post-processing CalculiX results: {args.yaml}")
     pipeline = SimulationPipeline.from_yaml(args.yaml, output_dir=args.output_dir)
     res = pipeline.post_process()
-    print(f"[+] Post-processing completed. 3D glTF model generated at: {res['gltf_path']}")
+    gltf_file = res.get("gltf_file") or res.get("gltf_path", "results.gltf")
+    print(f"[+] Post-processing completed. 3D glTF model generated at: {gltf_file}")
+    if "max_von_mises_stress" in res:
+        print(f"    - Max Von Mises: {res['max_von_mises_stress']:.2f} MPa")
+        print(f"    - Max Displ:     {res['max_displacement']:.4f} mm")
 
 
 def cmd_view(args):

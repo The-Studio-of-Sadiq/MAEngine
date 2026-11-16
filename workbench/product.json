@@ -1,6 +1,6 @@
 {
 	"nameShort": "MAEngine",
-	"nameLong": "MAEngine Mechanical Analysis Engine",
+	"nameLong": "MAEngine",
 	"applicationName": "maengine",
 	"vscodeVersion": "1.142.0",
 	"dataFolderName": ".maengine",

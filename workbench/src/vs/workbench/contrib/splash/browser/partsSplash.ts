@@ -48,6 +48,14 @@ export class PartsSplash {
 			perf.mark('code/didRemovePartsSplash');
 		}, undefined, this._disposables);
 
+		lifecycleService.when(LifecyclePhase.Ready).then(() => {
+			this._removePartsSplash();
+		});
+
+		lifecycleService.when(LifecyclePhase.Restored).then(() => {
+			this._removePartsSplash();
+		});
+
 		const lastIdleSchedule = this._disposables.add(new MutableDisposable());
 		const savePartsSplashSoon = () => {
 			lastIdleSchedule.value = dom.runWhenWindowIdle(mainWindow, () => this._savePartsSplash(), 2500);

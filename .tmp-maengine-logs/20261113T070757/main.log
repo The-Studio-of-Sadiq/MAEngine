@@ -1,0 +1,1029 @@
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#initialize
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#updatePolicyDefinitions ["update.mode","update.channel","update.enableWindowsBackgroundUpdates","update.showReleaseNotes","update.showPostInstallInfo","update.titleBar","http.useLocalProxyConfiguration","http.electronFetch","http.proxy","http.proxyStrictSSL","http.proxyKerberosServicePrincipal","http.noProxy","http.proxyAuthorization","http.proxySupport","http.systemCertificates","http.systemCertificatesNode","http.experimental.systemCertificatesV2","http.fetchAdditionalSupport","http.webSocketAdditionalSupport","http.experimental.networkInterfaceCheckInterval","telemetry.telemetryLevel","telemetry.feedback.enabled","telemetry.enableTelemetry","extensions.allowed","chat.agentMerge.enabled","chat.agentMerge.addressReviews","chat.agentMerge.fixCI","chat.agentMerge.resolveConflicts","chat.agentMerge.mergePullRequest","chat.agentMerge.mergeMethod","chat.agentMerge.replyAttribution","chat.agentHost.experimental.titleGeneration","chat.artifactTools.enabled","chat.canvases.enabled","chat.agentHost.experimental.autoAttachPullRequests","chat.agentHost.experimental.markdownPlanRichLinks","chat.agentHost.experimental.overlapProviderPreparation","chat.experimental.workspaceSnapshot","chat.agentHost.agentOrchestrationLimits","chat.agentHost.systemProxy.enabled","chat.agentHost.githubMcpServer.enabled","chat.agentHost.experimental.mcpToolRouting","chat.agentHost.claudeAgent.enabled","chat.agentHost.byokModels.enabled","chat.agentHost.codexAgent.enabled","chat.agentHost.codexAgent.sdkRoot","chat.agentHost.codexAgent.codexHome","chat.agentHost.codexAgent.binaryArgs","chat.agentHost.otel.enabled","chat.agentHost.otel.exporterType","chat.agentHost.otel.otlpEndpoint","chat.agentHost.otel.captureContent","chat.agentHost.otel.outfile","chat.agentHost.otel.dbSpanExporter.enabled","chat.agentHost.copilotAgent.multiRootEnabled","chat.agentHost.claudeAgent.multiRootEnabled","chat.agentHost.codexAgent.multiRootEnabled","chat.agentHost.copilotAgent.multiRootEnabled","chat.agentHost.claudeAgent.multiRootEnabled","chat.agentHost.codexAgent.multiRootEnabled","chat.agentHost.otel.otlpProtocol","chat.agentHost.otel.captureIdentity","chat.agentHost.otel.serviceName","chat.agentHost.otel.resourceAttributes","chat.agentHost.otel.headers"]
+2026-11-13 07:07:58.165 [trace] NativePolicyService#_updatePolicyDefinitions - Found 16 policy definitions
+2026-11-13 07:07:58.165 [trace] Creating watcher for productName MAEngine
+2026-11-13 07:07:58.165 [trace] NativePolicyService#_onDidPolicyChange - Updated policy values: {}
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#update ["update.mode","telemetry.telemetryLevel","telemetry.feedback.enabled","extensions.allowed","chat.agentHost.claudeAgent.enabled","chat.agentHost.codexAgent.enabled","chat.agentHost.otel.enabled","chat.agentHost.otel.exporterType","chat.agentHost.otel.otlpEndpoint","chat.agentHost.otel.captureContent","chat.agentHost.otel.outfile","chat.agentHost.otel.otlpProtocol","chat.agentHost.otel.captureIdentity","chat.agentHost.otel.serviceName","chat.agentHost.otel.resourceAttributes","chat.agentHost.otel.headers"]
+2026-11-13 07:07:58.165 [trace] [File Watcher (node.js)] Request to start watching: c:\Program Files\GitHubCopilot\managed-settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>),c:\Users\rashe\AppData\Roaming\MAEngine\User (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>),c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:07:58.165 [trace] [File Watcher (node.js)] ignoring a path for watching who's stat info failed to resolve: c:\Program Files\GitHubCopilot\managed-settings.json (error: Error: ENOENT: no such file or directory, stat 'c:\Program Files\GitHubCopilot\managed-settings.json')
+2026-11-13 07:07:58.165 [trace] [File Watcher (node.js)] starting fs.watchFile() on c:\Program Files\GitHubCopilot\managed-settings.json (correlationId: undefined)
+2026-11-13 07:07:58.165 [trace] [File Watcher (node.js)] ignoring a path for watching who's stat info failed to resolve: c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (error: Error: ENOENT: no such file or directory, stat 'c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json')
+2026-11-13 07:07:58.165 [trace] [File Watcher (node.js)] starting fs.watchFile() on c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (correlationId: undefined)
+2026-11-13 07:07:58.165 [debug] Starting VS Code
+2026-11-13 07:07:58.165 [debug] from: c:\Users\rashe\Documents\mechastudio\workbench
+2026-11-13 07:07:58.165 [debug] args: {"_":[],"diff":false,"merge":false,"add":false,"remove":false,"goto":false,"new-window":false,"reuse-window":false,"agents":false,"wait":false,"user-data-dir":"C:\\Users\\rashe\\AppData\\Roaming\\MAEngine","help":false,"list-extensions":false,"show-versions":false,"pre-release":false,"update-extensions":false,"version":false,"verbose":true,"status":false,"prof-startup":false,"no-cached-data":false,"prof-v8-extensions":false,"disable-extensions":false,"disable-lcd-text":false,"disable-gpu":false,"disable-chromium-sandbox":false,"sandbox":false,"telemetry":false,"debugRenderer":false,"enable-smoke-test-driver":false,"skip-sessions-welcome":false,"logExtensionHostCommunication":false,"skip-release-notes":false,"skip-welcome":false,"disable-telemetry":false,"disable-updates":false,"share-secrets-with-agents-app":false,"transient":false,"use-inmemory-secretstorage":false,"disable-workspace-trust":false,"disable-crash-reporter":false,"skip-add-to-recently-opened":false,"open-url":false,"file-write":false,"file-chmod":false,"force":false,"do-not-sync":false,"do-not-include-pack-dependencies":false,"trace":false,"trace-memory-infra":false,"preserve-env":false,"force-user-env":false,"force-disable-user-env":false,"open-devtools":false,"disable-gpu-sandbox":false,"__enable-file-policy":false,"enable-coi":false,"enable-rdp-display-tracking":false,"disable-layout-restore":false,"disable-experiments":false,"no-proxy-server":false,"no-sandbox":false,"nolazy":false,"force-renderer-accessibility":false,"ignore-certificate-errors":false,"allow-insecure-localhost":false,"disable-dev-shm-usage":false,"profile-temp":false,"logsPath":"C:\\Users\\rashe\\AppData\\Roaming\\MAEngine\\logs\\20261113T070757"}
+2026-11-13 07:07:58.165 [info] [node-compile-cache] main: packaged cache inactive (status: development, configured: C:\Users\rashe\Documents\mechastudio\workbench\out\vs\base\node-compile-cache\main, active: none)
+2026-11-13 07:07:58.165 [trace] Resolving machine identifier...
+2026-11-13 07:07:58.165 [trace] Resolving SQM identifier...
+2026-11-13 07:07:58.165 [trace] Resolving devDevice identifier...
+2026-11-13 07:07:58.165 [trace] Resolved machine identifier: bbe0d9191d11278176108f88b688bc74bf3bc4ae2c44653f23ee40b335a49d0b
+2026-11-13 07:07:58.165 [trace] Resolved SQM identifier: {086A6961-01A2-4846-8D20-AB99E72E92C1}
+2026-11-13 07:07:58.165 [trace] Resolved devDevice identifier: 816cc60f-027a-4dd1-b960-dee96785004f
+2026-11-13 07:07:58.165 [trace] Main->SharedProcess#connect
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#updatePolicyDefinitions ["terminal.integrated.automationProfile.linux","terminal.integrated.automationProfile.osx","terminal.integrated.automationProfile.windows","terminal.integrated.agentHostProfile.linux","terminal.integrated.agentHostProfile.osx","terminal.integrated.agentHostProfile.windows","terminal.integrated.profiles.windows","terminal.integrated.profiles.osx","terminal.integrated.profiles.linux","terminal.integrated.useWslProfiles","terminal.integrated.inheritEnv","terminal.integrated.persistentSessionScrollback","terminal.integrated.showLinkHover","terminal.integrated.ignoreProcessNames"]
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#updatePolicyDefinitions ["terminal.integrated.defaultProfile.linux","terminal.integrated.defaultProfile.osx","terminal.integrated.defaultProfile.windows"]
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#update []
+2026-11-13 07:07:58.165 [trace] PolicyConfiguration#update []
+2026-11-13 07:07:58.165 [trace] StorageMainService: creating application storage
+2026-11-13 07:07:58.166 [info] StorageMainService: creating application shared storage
+2026-11-13 07:07:58.166 [trace] ElectronURLListener: waiting for window to be ready to handle URLs...
+2026-11-13 07:07:58.166 [trace] lifecycle (main): phase changed (value: 2)
+2026-11-13 07:07:58.166 [trace] windowsManager#open
+2026-11-13 07:07:58.166 [trace] windowsManager#open pathsToOpen [{}]
+2026-11-13 07:07:58.166 [trace] windowsManager#doOpenEmpty {"restore":false,"forceNewWindow":false}
+2026-11-13 07:07:58.167 [trace] [File Watcher (node.js)] Started watching: 'c:\Users\rashe\AppData\Roaming\MAEngine\User'
+2026-11-13 07:07:58.367 [info] [CSS_DEV] DONE, 522 css modules (277ms)
+2026-11-13 07:07:58.376 [trace] IPC Object URL: Registered new channel vscode:34e47e9c-eddb-45d7-88ec-ff276b6f02c0.
+2026-11-13 07:07:58.377 [trace] window#validateWindowState: validating window state on 1 display(s) {"width":1200,"height":800,"mode":1,"x":84,"y":56,"hasDefaultState":true}
+2026-11-13 07:07:58.377 [trace] window#validateWindowState: single monitor working area {"x":0,"y":0,"width":1368,"height":864}
+2026-11-13 07:07:58.377 [trace] window#ctor: using window state {"width":1200,"height":800,"mode":1,"x":84,"y":56,"hasDefaultState":true}
+2026-11-13 07:07:58.456 [trace] window#load: attempt to load window (id: 1)
+2026-11-13 07:07:58.525 [trace] windowsManager#open used window count 1 (workspacesToOpen: 0, foldersToOpen: 0, emptyToRestore: 0, maybeOpenEmptyWindow: true)
+2026-11-13 07:07:58.597 [trace] lifecycle (main): phase changed (value: 3)
+2026-11-13 07:07:58.636 [trace] resolveShellEnv(): skipped (Windows)
+2026-11-13 07:07:58.776 [info] update#setState disabled
+2026-11-13 07:07:58.778 [trace] [File Watcher (node.js)] Request to stop watching: c:\Program Files\GitHubCopilot\managed-settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>),c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:07:58.779 [trace] [File Watcher (node.js)] stopping file watcher (c:\Program Files\GitHubCopilot\managed-settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>))
+2026-11-13 07:07:58.779 [trace] [File Watcher (node.js)] stopping file watcher (c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>))
+2026-11-13 07:07:58.801 [info] [shared storage] Creating shared storage database at 'c:\Users\rashe\.maengine-shared\sharedStorage\state.vscdb' (wasCreated: false)
+2026-11-13 07:07:58.802 [info] [shared storage] Initializing fallback application storage (path: c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage\state.vscdb)
+2026-11-13 07:07:58.967 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:07:58.970 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:07:58.973 [info] [shared storage] Fallback application storage initialized with 50 items
+2026-11-13 07:07:59.078 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:07:59.078 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:07:59.079 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:07:59.082 [debug] User data changed
+2026-11-13 07:07:59.104 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:07:59.107 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:07:59.111 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:07:59.111 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:07:59.190 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:07:59.191 [debug] User data changed
+2026-11-13 07:07:59.630 [trace] resolveShellEnv(): skipped (Windows)
+2026-11-13 07:08:01.376 [trace] lifecycle (main): phase changed (value: 4)
+2026-11-13 07:08:28.173 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:28.175 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:28.179 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:28.180 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:28.186 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:28.187 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:28.264 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:28.265 [debug] User data changed
+2026-11-13 07:08:42.143 [trace] NativeManagedSettingsService#updateWatcher - Found 23 managed-settings definitions
+2026-11-13 07:08:42.145 [trace] Creating native managed-settings watcher for productName GitHubCopilot
+2026-11-13 07:08:42.153 [trace] StorageMainService: creating workspace storage (1794532078685)
+2026-11-13 07:08:42.157 [trace] NativeManagedSettingsService#_onDidManagedSettingsChange - Updated managed-settings values: {}
+2026-11-13 07:08:42.161 [trace] [File Watcher (node.js)] [raw] ["change"] workspaceStorage
+2026-11-13 07:08:42.162 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\workspaceStorage
+2026-11-13 07:08:42.168 [trace] [File Watcher (node.js)] [raw] ["change"] workspaceStorage
+2026-11-13 07:08:42.168 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\workspaceStorage
+2026-11-13 07:08:42.201 [trace] NativePolicyService#_updatePolicyDefinitions - Found 54 policy definitions
+2026-11-13 07:08:42.202 [trace] Creating watcher for productName MAEngine
+2026-11-13 07:08:42.204 [trace] NativeManagedSettingsService#updateWatcher - Found 43 managed-settings definitions
+2026-11-13 07:08:42.205 [trace] Creating native managed-settings watcher for productName GitHubCopilot
+2026-11-13 07:08:42.208 [trace] NativePolicyService#_onDidPolicyChange - Updated policy values: {}
+2026-11-13 07:08:42.208 [trace] PolicyConfiguration#onDidChangePolicies []
+2026-11-13 07:08:42.209 [trace] PolicyConfiguration#update []
+2026-11-13 07:08:42.210 [trace] NativeManagedSettingsService#_onDidManagedSettingsChange - Updated managed-settings values: {}
+2026-11-13 07:08:42.242 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\workspaceStorage
+2026-11-13 07:08:42.243 [debug] User data changed
+2026-11-13 07:08:42.499 [trace] resolveShellEnv(): skipped (Windows)
+2026-11-13 07:08:42.503 [trace] [UtilityProcess type: agentHost, pid: <none>]: creating new...
+2026-11-13 07:08:42.510 [info] AgentHostProcessManager: agent host started
+2026-11-13 07:08:42.552 [trace] [UtilityProcess type: agentHost, pid: 26596]: successfully created
+2026-11-13 07:08:42.967 [trace] window#load: window reported ready (id: 1)
+2026-11-13 07:08:42.968 [trace] ElectronURLListener#flush(): flushing URLs
+2026-11-13 07:08:43.131 [trace] [SharedProcess] onWindowConnection for: vscode:createSharedProcessChannelConnectionResult
+2026-11-13 07:08:43.134 [trace] [UtilityProcess type: shared-process, pid: <none>]: creating new...
+2026-11-13 07:08:43.137 [trace] [UtilityProcess type: shared-process, pid: <none>]: payload sent via postMessage()
+2026-11-13 07:08:43.138 [trace] [UtilityProcessWorker]: createWorker(window: 1, moduleId: vs/platform/files/node/watcher/watcherMain)
+2026-11-13 07:08:43.141 [trace] [UtilityProcess id: 1, type: fileWatcher, pid: <none>]: creating new...
+2026-11-13 07:08:43.188 [trace] [UtilityProcess type: shared-process, pid: 30436]: successfully created
+2026-11-13 07:08:43.217 [trace] [File Watcher (node.js)] [raw] ["change"] chatLanguageModels.json
+2026-11-13 07:08:43.218 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\chatLanguageModels.json
+2026-11-13 07:08:43.246 [trace] [UtilityProcess id: 1, type: fileWatcher, pid: 13848]: successfully created
+2026-11-13 07:08:43.302 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\chatLanguageModels.json
+2026-11-13 07:08:43.303 [debug] User data changed
+2026-11-13 07:08:43.309 [trace] [UtilityProcess id: 1, type: extensionHost, pid: <none>]: creating new...
+2026-11-13 07:08:43.460 [trace] [UtilityProcess id: 1, type: extensionHost, pid: 19024]: successfully created
+2026-11-13 07:08:43.873 [trace] resolveShellEnv(): skipped (Windows)
+2026-11-13 07:08:44.806 [trace] Setting background throttling for window 1 to 'true'
+2026-11-13 07:08:45.231 [trace] [File Watcher (node.js)] [raw] ["change"] snippets
+2026-11-13 07:08:45.232 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\snippets
+2026-11-13 07:08:45.321 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\snippets
+2026-11-13 07:08:45.322 [debug] User data changed
+2026-11-13 07:08:46.551 [debug] Terminal profile not validated bash (MSYS2) [{"path":"C:\\msys64\\usr\\bin\\bash.exe","isUnsafe":true}]
+2026-11-13 07:08:46.554 [debug] Terminal profile not validated bash (MSYS2) [{"path":"C:\\msys64\\usr\\bin\\bash.exe","isUnsafe":true}]
+2026-11-13 07:08:46.569 [debug] Terminal profile not validated Cygwin [{"path":"C:\\cygwin64\\bin\\bash.exe","isUnsafe":true},{"path":"C:\\cygwin\\bin\\bash.exe","isUnsafe":true}]
+2026-11-13 07:08:46.607 [debug] Terminal profile not validated Cygwin [{"path":"C:\\cygwin64\\bin\\bash.exe","isUnsafe":true},{"path":"C:\\cygwin\\bin\\bash.exe","isUnsafe":true}]
+2026-11-13 07:08:46.801 [trace] WSL is not installed, so could not detect WSL profiles
+2026-11-13 07:08:47.778 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:47.779 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:47.781 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:47.781 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:47.869 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:47.870 [debug] User data changed
+2026-11-13 07:08:49.500 [trace] [SharedProcess] IPC ready
+2026-11-13 07:08:49.501 [trace] Main->SharedProcess#connect: connection established
+2026-11-13 07:08:49.525 [trace] NativePolicyService#_updatePolicyDefinitions - Found 54 policy definitions
+2026-11-13 07:08:49.526 [trace] Creating watcher for productName MAEngine
+2026-11-13 07:08:49.530 [trace] NativePolicyService#_onDidPolicyChange - Updated policy values: {}
+2026-11-13 07:08:49.530 [trace] PolicyConfiguration#onDidChangePolicies []
+2026-11-13 07:08:49.531 [trace] PolicyConfiguration#update []
+2026-11-13 07:08:49.534 [trace] [File Watcher (node.js)] Request to start watching: c:\Users\rashe\AppData\Roaming\MAEngine\User (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>),c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:08:49.537 [trace] [File Watcher (node.js)] ignoring a path for watching who's stat info failed to resolve: c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (error: Error: ENOENT: no such file or directory, stat 'c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json')
+2026-11-13 07:08:49.538 [trace] [File Watcher (node.js)] starting fs.watchFile() on c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (correlationId: undefined)
+2026-11-13 07:08:49.539 [trace] [File Watcher (node.js)] Started watching: 'c:\Users\rashe\AppData\Roaming\MAEngine\User'
+2026-11-13 07:08:49.572 [trace] [SharedProcess] Overall ready
+2026-11-13 07:08:49.611 [trace] [File Watcher (node.js)] Request to start watching: c:\Users\rashe\.maengine-dev\extensions (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>),c:\Users\rashe\.maengine-dev\extensions\extensions.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:08:49.611 [trace] [File Watcher (node.js)] Request to stop watching: c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:08:49.612 [trace] [File Watcher (node.js)] stopping file watcher (c:\Users\rashe\AppData\Roaming\MAEngine\User\settings.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>))
+2026-11-13 07:08:49.626 [trace] [File Watcher (node.js)] Started watching: 'c:\Users\rashe\.maengine-dev\extensions'
+2026-11-13 07:08:49.630 [trace] [File Watcher (node.js)] Started watching: 'c:\Users\rashe\.maengine-dev\extensions\extensions.json'
+2026-11-13 07:08:49.818 [trace] [File Watcher (node.js)] Request to start watching: c:\Users\rashe\AppData\Roaming\MAEngine\User\mcp.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:08:49.819 [trace] [File Watcher (node.js)] ignoring a path for watching who's stat info failed to resolve: c:\Users\rashe\AppData\Roaming\MAEngine\User\mcp.json (error: Error: ENOENT: no such file or directory, stat 'c:\Users\rashe\AppData\Roaming\MAEngine\User\mcp.json')
+2026-11-13 07:08:49.820 [trace] [File Watcher (node.js)] starting fs.watchFile() on c:\Users\rashe\AppData\Roaming\MAEngine\User\mcp.json (correlationId: undefined)
+2026-11-13 07:08:50.627 [trace] [File Watcher (node.js)] Request to stop watching: c:\Users\rashe\AppData\Roaming\MAEngine\User\mcp.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>)
+2026-11-13 07:08:50.628 [trace] [File Watcher (node.js)] stopping file watcher (c:\Users\rashe\AppData\Roaming\MAEngine\User\mcp.json (excludes: <none>, includes: <all>, filter: <none>, correlationId: <none>))
+2026-11-13 07:08:57.397 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:57.398 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:57.399 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:57.400 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:57.401 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:57.401 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:57.403 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:08:57.403 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:57.482 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:57.483 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:08:57.483 [debug] User data changed
+2026-11-13 07:09:03.975 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:03.976 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:03.977 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:03.977 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:04.065 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:04.066 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:04.066 [debug] User data changed
+2026-11-13 07:09:10.361 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:10.361 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:10.363 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:10.364 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:10.368 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:10.368 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:10.370 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:10.370 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:10.441 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:10.442 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:10.442 [debug] User data changed
+2026-11-13 07:09:13.273 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.274 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.276 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.276 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.280 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.280 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.281 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.282 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.283 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.284 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.285 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.286 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.289 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.290 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.291 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.291 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.307 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.307 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.309 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.309 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.313 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.313 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.315 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.316 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.317 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.318 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.321 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.322 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.323 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.323 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.326 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.326 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.327 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.328 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.329 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.329 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.359 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.360 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.360 [debug] User data changed
+2026-11-13 07:09:13.401 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.403 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.405 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.408 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.415 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.416 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.420 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.421 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.425 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.425 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.429 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.430 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.431 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.431 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.435 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.436 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.446 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.447 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.450 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.452 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.457 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.457 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.459 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.459 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.461 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.461 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.462 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.463 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.464 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.465 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.466 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.467 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.503 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.505 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.506 [debug] User data changed
+2026-11-13 07:09:13.509 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.510 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.515 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.517 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.521 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.522 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.524 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.524 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.526 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.528 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.531 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.531 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.533 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.533 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.535 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.535 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.537 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.538 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.547 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.547 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.549 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.549 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.551 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.551 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.554 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.554 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.556 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.556 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.593 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.595 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.595 [debug] User data changed
+2026-11-13 07:09:13.627 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.629 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.633 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.634 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.639 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.641 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.643 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.646 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.651 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.651 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.653 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.655 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.658 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.660 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.665 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.665 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.667 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.667 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.669 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.675 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.679 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.681 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.683 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.683 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.688 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.690 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.694 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.694 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.696 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.697 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.698 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.699 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.701 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.702 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.710 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.710 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.712 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.712 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.714 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.716 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.719 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.719 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.721 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.721 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.723 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.723 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.725 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.726 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.727 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.727 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.728 [debug] User data changed
+2026-11-13 07:09:13.734 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.735 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.736 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.737 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.738 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.739 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.740 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.741 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.742 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.743 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.745 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.745 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.791 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.792 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.799 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.801 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.806 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.808 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.811 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.811 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.812 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.817 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.819 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.825 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.825 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.830 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.832 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.835 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.837 [debug] User data changed
+2026-11-13 07:09:13.841 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.844 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.846 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.846 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.848 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.848 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.850 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.851 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.853 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.853 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.858 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.859 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.861 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.862 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.864 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.866 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.869 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.871 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.874 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.874 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.876 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.876 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.883 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.884 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.886 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.887 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.889 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.889 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.891 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.891 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.893 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.893 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.895 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.895 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.897 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.897 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.902 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.902 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.904 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.905 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.906 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.907 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.908 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.909 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.910 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.911 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.911 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.933 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.934 [debug] User data changed
+2026-11-13 07:09:13.980 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.981 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.983 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.985 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.992 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.993 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:13.996 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:13.997 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.003 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.004 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.006 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.006 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.010 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.011 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.016 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.017 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.019 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.019 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.021 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.021 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.023 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.023 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.032 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.033 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.035 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.035 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.043 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.044 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.057 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.063 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.064 [debug] User data changed
+2026-11-13 07:09:14.117 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.118 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.121 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.121 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.133 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.134 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.135 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.136 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.149 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.152 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.154 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.155 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.164 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.165 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.167 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.167 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.169 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.169 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.170 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.171 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.174 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.174 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.176 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.177 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.210 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.212 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.213 [debug] User data changed
+2026-11-13 07:09:14.242 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.245 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.251 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.252 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.267 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.267 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.269 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.270 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.274 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.275 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.277 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.278 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.285 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.285 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.289 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.291 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.301 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.302 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.304 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.306 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.312 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.312 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.316 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.318 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.325 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.325 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.327 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.328 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.329 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.330 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.331 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.332 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.333 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.333 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.334 [debug] User data changed
+2026-11-13 07:09:14.339 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.340 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.342 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.343 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.347 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.348 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.350 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.350 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.355 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.356 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.359 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.361 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.367 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.368 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.370 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.370 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.373 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.374 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.376 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.377 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.383 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.384 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.385 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.386 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.389 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.390 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.392 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.392 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.426 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.427 [debug] User data changed
+2026-11-13 07:09:14.428 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.472 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.473 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.476 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.477 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.488 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.489 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.492 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.512 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.518 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.520 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.524 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.525 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.531 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.531 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.537 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.537 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.540 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.540 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.543 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.544 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.546 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.546 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.553 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.554 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.558 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.558 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.559 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.560 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.561 [debug] User data changed
+2026-11-13 07:09:14.569 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.570 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.571 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.572 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.574 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.575 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.577 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.578 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.580 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.581 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.582 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.583 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.588 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.588 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.590 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.590 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.591 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.592 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.594 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.594 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.596 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.596 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.598 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.598 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.600 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.601 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.602 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.603 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.604 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.605 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.656 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.657 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.658 [debug] User data changed
+2026-11-13 07:09:14.696 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.701 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.704 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.705 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.709 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.712 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.715 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.716 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.721 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.727 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.729 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.730 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.736 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.736 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.743 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.743 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.746 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.747 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.750 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.750 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.752 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.753 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.758 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.760 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.762 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.763 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.765 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.765 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.767 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.770 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.774 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.775 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.777 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.777 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.778 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.785 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.786 [debug] User data changed
+2026-11-13 07:09:14.790 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.790 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.792 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.793 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.794 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.795 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.797 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.797 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.799 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.799 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.801 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.802 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.804 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.804 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.808 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.809 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.811 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.812 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.813 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.814 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.815 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.816 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.818 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.818 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.820 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.820 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.868 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.871 [debug] User data changed
+2026-11-13 07:09:14.882 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.885 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.889 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.892 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.892 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.899 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.901 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.905 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.907 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.917 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.919 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.924 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.924 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.926 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.927 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.929 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.929 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.934 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.936 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.938 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.938 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.940 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.942 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.945 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.948 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.949 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.950 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.952 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.954 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.962 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.962 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.964 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.965 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.967 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.969 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.972 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.972 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.974 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.975 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.976 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.977 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.978 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.979 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.980 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.981 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.981 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.982 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.982 [debug] User data changed
+2026-11-13 07:09:14.992 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.993 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.995 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.995 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.997 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.997 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:14.999 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:14.999 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.001 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.001 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.003 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.003 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.005 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.006 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.007 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.008 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.076 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.077 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.078 [debug] User data changed
+2026-11-13 07:09:15.164 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.165 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.167 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.169 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.174 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.175 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.178 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.186 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.191 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.192 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.195 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.195 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.197 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.198 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.201 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.202 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.204 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.204 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.209 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.211 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.215 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.215 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.217 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.219 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.226 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.227 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.230 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.230 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.234 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.236 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.241 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.244 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.245 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.247 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.247 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.249 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.251 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.252 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.253 [debug] User data changed
+2026-11-13 07:09:15.263 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.273 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.276 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.277 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.280 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.280 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.282 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.283 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.285 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.285 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.290 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.291 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.293 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.293 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.295 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.295 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.297 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.298 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.299 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.300 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.302 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.303 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.305 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.306 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.326 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.372 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.373 [debug] User data changed
+2026-11-13 07:09:15.378 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.379 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.384 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.386 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.391 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.392 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.395 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.397 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.402 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.403 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.405 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.405 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.407 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.408 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.417 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.418 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.420 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.420 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.422 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.422 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.424 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.425 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.428 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.428 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.432 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.433 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.436 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.438 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.441 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.442 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.447 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.448 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.454 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.455 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.457 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.457 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.459 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.460 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.461 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.462 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.464 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.466 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.469 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.469 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.470 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.471 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.471 [debug] User data changed
+2026-11-13 07:09:15.479 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.480 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.481 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.482 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.484 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.484 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.486 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.487 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.489 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.489 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.491 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.491 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.494 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.494 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.496 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.496 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.556 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.558 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.562 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.567 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.569 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.570 [debug] User data changed
+2026-11-13 07:09:15.573 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.581 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.581 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.584 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.585 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.589 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.591 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.594 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.596 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.598 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.598 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.602 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.602 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.606 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.607 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.615 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.617 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.619 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.619 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.621 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.622 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.625 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.628 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.630 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.631 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.633 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.633 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.641 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.641 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.643 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.643 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.645 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.646 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.650 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.650 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.653 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.653 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.659 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.660 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.661 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.662 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.664 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.664 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.666 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.666 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.668 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.668 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.670 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.671 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.673 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.673 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.674 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.675 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.675 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.676 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.677 [debug] User data changed
+2026-11-13 07:09:15.679 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.679 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.681 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.682 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.738 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.740 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.747 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.748 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.752 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.753 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.757 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.758 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.760 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.766 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.768 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.771 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.773 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.774 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.775 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.779 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.779 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.781 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.783 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.784 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.784 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.787 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.788 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.797 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.798 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.805 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.806 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.810 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.811 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.813 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.814 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.815 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.816 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.818 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.819 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.822 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.824 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.825 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.825 [debug] User data changed
+2026-11-13 07:09:15.832 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.832 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.834 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.835 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.836 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.837 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.838 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.838 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.840 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.840 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.842 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.842 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.844 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.844 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.846 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.846 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.849 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.849 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.851 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.851 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.852 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.853 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.854 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.855 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.855 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.885 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.887 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.891 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.891 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.896 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.898 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.901 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.903 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.908 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.908 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.912 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.913 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.916 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.916 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.918 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.918 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.918 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.919 [debug] User data changed
+2026-11-13 07:09:15.924 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.925 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.926 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.926 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.927 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.927 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.928 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.928 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.929 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.930 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.931 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.931 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.932 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.932 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.933 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.934 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.935 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.935 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.936 [trace] [File Watcher (node.js)] [raw] ["change"] globalStorage
+2026-11-13 07:09:15.937 [trace] [File Watcher (node.js)] [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:15.969 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:16.003 [trace] [File Watcher (node.js)]  >> normalized [CHANGED] c:\Users\rashe\AppData\Roaming\MAEngine\User\globalStorage
+2026-11-13 07:09:16.005 [debug] User data changed

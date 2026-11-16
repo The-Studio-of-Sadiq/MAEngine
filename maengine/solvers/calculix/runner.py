@@ -45,7 +45,11 @@ class CalculixRunner:
             # Default to all physical cores
             cpu_count = os.cpu_count() or 4
             env["OMP_NUM_THREADS"] = str(cpu_count)
-            env["CCX_NPROC_RESULTS"] = str(cpu_count)
+        # Result recovery (stresses, reaction forces) must stay single-threaded: with the bundled
+        # CalculiX 2.21 Windows build, CCX_NPROC_RESULTS > 1 intermittently corrupts stresses and
+        # reaction forces (displacements stay correct). Measured 2/8 bad runs with 8 threads,
+        # 0/8 with 1. The equation solver above still uses all cores.
+        env.setdefault("CCX_NPROC_RESULTS", "1")
 
         proc = subprocess.Popen(
             cmd,

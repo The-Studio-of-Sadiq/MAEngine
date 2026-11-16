@@ -11,7 +11,7 @@ import { isMacintosh, isWeb, OS } from '../../../../base/common/platform.js';
 import { localize } from '../../../../nls.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
-import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
+import { CommandsRegistry, ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -86,6 +86,7 @@ export class EditorGroupWatermark extends Disposable {
 
 	constructor(
 		container: HTMLElement,
+		@ICommandService private readonly commandService: ICommandService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -102,6 +103,7 @@ export class EditorGroupWatermark extends Disposable {
 			h('.editor-group-watermark-toolbar-container@toolbarContainer'),
 			h('.editor-group-watermark', [
 				h('.watermark-container', [
+					h('.maengine-watermark-hero@heroBanner'),
 					h('.letterpress'),
 					h('.shortcuts@shortcuts'),
 				])
@@ -111,6 +113,50 @@ export class EditorGroupWatermark extends Disposable {
 		append(container, elements.root);
 		this.shortcuts = elements.shortcuts;
 		this.toolbarContainer = elements.toolbarContainer;
+
+		// Expand watermark container and hide default VS Code letterpress mark
+		const watermarkElem = elements.root.querySelector('.editor-group-watermark') as HTMLElement | null;
+		if (watermarkElem) {
+			watermarkElem.style.maxWidth = '850px';
+			watermarkElem.style.width = '100%';
+		}
+		const letterpress = elements.root.querySelector('.letterpress') as HTMLElement | null;
+		if (letterpress) {
+			letterpress.style.display = 'none';
+		}
+
+		// Render bold HELLO WORLD and MAEngine hero banner in watermark
+		const hero = elements.heroBanner;
+		hero.style.cssText = 'text-align: center; margin-bottom: 24px; padding: 24px 20px; width: 100%; box-sizing: border-box;';
+
+		const heroTitle = append(hero, $('h1'));
+		heroTitle.textContent = 'HELLO WORLD';
+		heroTitle.style.cssText = 'font-size: 64px; font-weight: 900; letter-spacing: 6px; color: #00d2ff; background: linear-gradient(135deg, #00d2ff, #3a7bd5, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 12px 0; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: block; text-align: center; filter: drop-shadow(0 4px 18px rgba(0,210,255,0.4));';
+
+		const heroSub = append(hero, $('p'));
+		heroSub.textContent = 'MAEngine • Mechanical Analysis Engine & Simulation Workbench';
+		heroSub.style.cssText = 'font-size: 15px; font-weight: 600; color: var(--vscode-foreground, #ccc); margin: 0 0 6px 0;';
+
+		const heroTag = append(hero, $('p'));
+		heroTag.textContent = 'CAD Parametrics • Gmsh Conformal Meshing • CalculiX FEA • 3D Stress Viewport';
+		heroTag.style.cssText = 'font-size: 12px; color: var(--vscode-descriptionForeground, #888); margin: 0 0 16px 0;';
+
+		const btnRow = append(hero, $('div'));
+		btnRow.style.cssText = 'display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px;';
+
+		const openBtn = append(btnRow, $('button')) as HTMLButtonElement;
+		openBtn.textContent = '🚀 Open MAEngine Home';
+		openBtn.style.cssText = 'background: var(--vscode-button-background, #0984e3); color: var(--vscode-button-foreground, #fff); border: none; border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;';
+		openBtn.onclick = () => {
+			this.commandService.executeCommand('maengine.project.showStart');
+		};
+
+		const bmBtn = append(btnRow, $('button')) as HTMLButtonElement;
+		bmBtn.textContent = '⚡ Run Cantilever Benchmark';
+		bmBtn.style.cssText = 'background: var(--vscode-button-secondaryBackground, #2d3436); color: var(--vscode-button-secondaryForeground, #fff); border: 1px solid var(--vscode-widget-border, #444); border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;';
+		bmBtn.onclick = () => {
+			this.commandService.executeCommand('maengine.project.loadBenchmark', 'Cantilever Beam Static Stress');
+		};
 
 		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this.toolbarContainer, MenuId.EditorGroupWatermarkToolbar, {
 			hiddenItemStrategy: HiddenItemStrategy.NoHide,
