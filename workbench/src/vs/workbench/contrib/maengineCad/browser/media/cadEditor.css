@@ -265,3 +265,9 @@
 	font-size: var(--ma-font-xs, 11px);
 	font-style: italic;
 }
+
+/* The 3D / Bodies switch shows one view at a time. */
+.maengine-cad-editor .ma-cad-viewport.hidden,
+.maengine-cad-editor .ma-cad-bodies-view.hidden {
+	display: none;
+}
