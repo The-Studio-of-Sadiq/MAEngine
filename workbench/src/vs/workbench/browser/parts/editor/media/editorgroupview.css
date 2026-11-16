@@ -262,3 +262,63 @@
 	width: 100%;
 	height: 100%;
 }
+
+/* MAEngine calm empty-editor watermark */
+.editor-group-watermark .maengine-watermark {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--ma-space-2, 8px);
+	text-align: center;
+	padding: var(--ma-space-4, 16px);
+	box-sizing: border-box;
+}
+
+.editor-group-watermark .maengine-watermark-mark {
+	width: 44px;
+	height: 30px;
+	opacity: 0.45;
+	margin-bottom: var(--ma-space-1, 4px);
+}
+
+.editor-group-watermark .maengine-watermark-text {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-m, 13px);
+	margin: 0;
+	user-select: none;
+}
+
+.editor-group-watermark .maengine-watermark-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	margin-top: var(--ma-space-2, 8px);
+}
+
+.editor-group-watermark .maengine-watermark-btn {
+	background: var(--vscode-button-secondaryBackground, #2d3436);
+	color: var(--vscode-button-secondaryForeground, #fff);
+	border: 1px solid var(--ma-border, var(--vscode-widget-border, #444));
+	border-radius: var(--ma-radius, 4px);
+	padding: 4px 14px;
+	font-size: var(--ma-font-s, 12px);
+	font-family: inherit;
+	cursor: pointer;
+	box-sizing: border-box;
+}
+
+.editor-group-watermark .maengine-watermark-btn:hover {
+	background: var(--vscode-button-secondaryHoverBackground, #3d4446);
+}
+
+.editor-group-watermark .maengine-watermark-btn.primary {
+	background: var(--vscode-button-background, #1A5FB4);
+	color: var(--vscode-button-foreground, #fff);
+	border-color: transparent;
+}
+
+.editor-group-watermark .maengine-watermark-btn.primary:hover {
+	background: var(--vscode-button-hoverBackground, #1C6EC1);
+}
+

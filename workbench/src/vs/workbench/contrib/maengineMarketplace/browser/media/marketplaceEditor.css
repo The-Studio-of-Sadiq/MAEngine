@@ -1,0 +1,118 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-marketplace-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-marketplace-editor .ma-market-content {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--ma-space-4, 16px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-3, 12px);
+	max-width: 800px;
+}
+
+.maengine-marketplace-editor .ma-market-search-box {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-marketplace-editor .ma-market-search-input {
+	flex: 1;
+	height: 28px;
+	padding: 0 var(--ma-space-2, 8px);
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, var(--ma-border));
+	border-radius: var(--ma-radius, 4px);
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	box-sizing: border-box;
+}
+
+.maengine-marketplace-editor .ma-market-grid {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-marketplace-editor .ma-market-card {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--ma-space-4, 16px);
+	padding: var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	cursor: pointer;
+}
+
+.maengine-marketplace-editor .ma-market-card:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-marketplace-editor .ma-market-card.selected {
+	border-color: var(--ma-accent, var(--vscode-focusBorder));
+	background: var(--vscode-list-activeSelectionBackground, rgba(0, 0, 0, 0.06));
+}
+
+.maengine-marketplace-editor .ma-market-card-main {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-1, 4px);
+	flex: 1;
+	min-width: 0;
+}
+
+.maengine-marketplace-editor .ma-market-card-title-row {
+	display: flex;
+	align-items: baseline;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-marketplace-editor .ma-market-card-title {
+	font-size: var(--ma-font-m, 13px);
+	font-weight: 600;
+}
+
+.maengine-marketplace-editor .ma-market-card-ver {
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-variant-numeric: tabular-nums;
+}
+
+.maengine-marketplace-editor .ma-market-card-desc {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	line-height: 1.4;
+}
+
+.maengine-marketplace-editor .ma-market-card-side {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	flex-shrink: 0;
+}
+
+.maengine-marketplace-editor .ma-market-pill-installed {
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-ok, var(--vscode-terminal-ansiGreen));
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	padding: 2px var(--ma-space-2, 8px);
+	border-radius: var(--ma-radius, 4px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+}

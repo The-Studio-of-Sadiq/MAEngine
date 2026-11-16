@@ -15,7 +15,7 @@ export class MarketplaceEditorInput extends EditorInput {
 	static readonly ID: string = 'workbench.input.maengine.marketplace';
 	static readonly EDITOR_ID: string = 'workbench.editors.maengine.marketplaceEditor';
 
-	constructor(readonly resource?: URI) {
+	constructor(readonly resource: URI) {
 		super();
 	}
 
@@ -28,15 +28,15 @@ export class MarketplaceEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('marketplaceEditor.name', "08 Marketplace Hub");
+		return localize('marketplaceEditor.name', "Marketplace");
 	}
 
-	override getIcon(): ThemeIcon {
+	override getIcon(): ThemeIcon | undefined {
 		return Codicon.extensions;
 	}
 
 	override matches(other: EditorInput): boolean {
-		return other instanceof MarketplaceEditorInput;
+		return other instanceof MarketplaceEditorInput && other.resource.toString() === this.resource.toString();
 	}
 }
 

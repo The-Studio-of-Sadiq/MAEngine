@@ -1,0 +1,112 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-cad-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-cad-editor .ma-cad-viewport {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	overflow: hidden;
+}
+
+.maengine-cad-editor .ma-cad-canvas-box {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	user-select: none;
+}
+
+.maengine-cad-editor .ma-cad-canvas-box svg {
+	color: var(--ma-border, var(--vscode-panel-border));
+}
+
+.maengine-cad-editor .ma-cad-triad {
+	position: absolute;
+	bottom: var(--ma-space-3, 12px);
+	left: var(--ma-space-3, 12px);
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	padding: 2px var(--ma-space-2, 8px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	font-size: var(--ma-font-xs, 11px);
+	font-weight: 600;
+}
+
+.maengine-cad-editor .ma-cad-triad .axis-x { color: var(--ma-fail, #c62f2f); }
+.maengine-cad-editor .ma-cad-triad .axis-y { color: var(--ma-ok, #2e8540); }
+.maengine-cad-editor .ma-cad-triad .axis-z { color: var(--ma-info, #1a73c4); }
+
+.maengine-cad-editor .ma-cad-bodies-view {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--ma-space-4, 16px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-3, 12px);
+}
+
+.maengine-cad-editor .ma-cad-section-title {
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin: 0;
+}
+
+.maengine-cad-editor .ma-cad-item-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-1, 4px);
+}
+
+.maengine-cad-editor .ma-cad-body-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	border-radius: var(--ma-radius, 4px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	background: var(--ma-surface, var(--vscode-editor-background));
+	cursor: pointer;
+	font-size: var(--ma-font-m, 13px);
+}
+
+.maengine-cad-editor .ma-cad-body-row:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-cad-editor .ma-cad-body-row.selected {
+	border-color: var(--ma-accent, var(--vscode-focusBorder));
+	background: var(--vscode-list-activeSelectionBackground, rgba(0, 0, 0, 0.06));
+}
+
+.maengine-cad-editor .ma-cad-body-meta {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-3, 12px);
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}

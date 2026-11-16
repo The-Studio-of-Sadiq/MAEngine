@@ -3,435 +3,362 @@
  *  Licensed under the MIT license.
  *--------------------------------------------------------------------------------------------*/
 
-import { $, append, clearNode } from '../../../../base/browser/dom.js';
+import '../../maengineShell/browser/media/maengineTokens.css';
+import './media/startEditor.css';
+import { $, addDisposableListener, append, clearNode, Dimension, EventType } from '../../../../base/browser/dom.js';
 import { DomScrollableElement } from '../../../../base/browser/ui/scrollbar/scrollableElement.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { joinPath } from '../../../../base/common/resources.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { ScrollbarVisibility } from '../../../../base/common/scrollable.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
+import { basename } from '../../../../base/common/resources.js';
+import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
+import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
+import { IFileService } from '../../../../platform/files/common/files.js';
+import { IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
-import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { IPathService } from '../../../services/path/common/pathService.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
-import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
-import { IMAEngineProjectService, UnitSystem } from '../../../services/maengineProject/common/maengineProject.js';
-import { CadEditorInput } from '../../maengineCad/browser/cadEditorInput.js';
-import { MarketplaceEditorInput } from '../../maengineMarketplace/browser/marketplaceEditorInput.js';
-import { MaterialEditorInput } from '../../maengineMaterial/browser/materialEditorInput.js';
-import { MeshEditorInput } from '../../maengineMesh/browser/meshEditorInput.js';
-import { PhysicsEditorInput } from '../../maenginePhysics/browser/physicsEditorInput.js';
-import { ResultsEditorInput } from '../../maengineResults/browser/resultsEditorInput.js';
-import { SolverEditorInput } from '../../maengineSolver/browser/solverEditorInput.js';
+import { IMAEngineProjectService } from '../../../services/maengineProject/common/maengineProject.js';
+import { resolveBenchmarkUri } from './projectParts.js';
 import { StartEditorInput } from './startEditorInput.js';
+
+const OPENED_STORAGE_KEY = 'maengine.project.lastOpened';
+
+interface IRecentProjectEntry {
+	readonly path: string;
+	readonly name: string;
+	readonly opened: number;
+}
+
+function formatOpenedDate(time: number): string {
+	const date = new Date(time);
+	const today = new Date();
+	if (date.toDateString() === today.toDateString()) {
+		return localize('start.openedToday', "Today");
+	}
+	return date.toLocaleDateString(undefined, {
+		day: 'numeric',
+		month: 'short',
+		year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+	});
+}
+
+function renderBrandMarkSvg(parent: HTMLElement): SVGSVGElement {
+	const svg = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'svg');
+	svg.setAttribute('viewBox', '0 0 64 44');
+	svg.setAttribute('class', 'ma-brand-art mark');
+	svg.setAttribute('aria-hidden', 'true');
+
+	const defs = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'defs');
+	const grad = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+	grad.setAttribute('id', 'ma-brand-grad');
+	grad.setAttribute('x1', '0');
+	grad.setAttribute('y1', '0');
+	grad.setAttribute('x2', '0');
+	grad.setAttribute('y2', '1');
+
+	const stop1 = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'stop');
+	stop1.setAttribute('offset', '0%');
+	stop1.setAttribute('stop-color', 'var(--ma-brand-top, #1C6EC1)');
+	const stop2 = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'stop');
+	stop2.setAttribute('offset', '100%');
+	stop2.setAttribute('stop-color', 'var(--ma-brand-bottom, #0B3C84)');
+	grad.appendChild(stop1);
+	grad.appendChild(stop2);
+	defs.appendChild(grad);
+	svg.appendChild(defs);
+
+	// Hexahedral finite element isometric projection
+	const topFace = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	topFace.setAttribute('d', 'M32 4 L58 15 L32 26 L6 15 Z');
+	topFace.setAttribute('fill', 'url(#ma-brand-grad)');
+	topFace.setAttribute('opacity', '0.9');
+	topFace.setAttribute('stroke', 'var(--ma-brand-ink, #0A1F3D)');
+	topFace.setAttribute('stroke-width', '1.5');
+	topFace.setAttribute('stroke-linejoin', 'round');
+	svg.appendChild(topFace);
+
+	const leftFace = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	leftFace.setAttribute('d', 'M6 15 L32 26 L32 40 L6 29 Z');
+	leftFace.setAttribute('fill', 'url(#ma-brand-grad)');
+	leftFace.setAttribute('opacity', '0.75');
+	leftFace.setAttribute('stroke', 'var(--ma-brand-ink, #0A1F3D)');
+	leftFace.setAttribute('stroke-width', '1.5');
+	leftFace.setAttribute('stroke-linejoin', 'round');
+	svg.appendChild(leftFace);
+
+	const rightFace = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	rightFace.setAttribute('d', 'M32 26 L58 15 L58 29 L32 40 Z');
+	rightFace.setAttribute('fill', 'url(#ma-brand-grad)');
+	rightFace.setAttribute('opacity', '0.6');
+	rightFace.setAttribute('stroke', 'var(--ma-brand-ink, #0A1F3D)');
+	rightFace.setAttribute('stroke-width', '1.5');
+	rightFace.setAttribute('stroke-linejoin', 'round');
+	svg.appendChild(rightFace);
+
+	// Subdivided mesh line markers
+	const meshLines = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	meshLines.setAttribute('d', 'M19 9.5 L45 20.5 M45 9.5 L19 20.5 M19 20.5 L19 34.5 M45 20.5 L45 34.5');
+	meshLines.setAttribute('stroke', 'var(--ma-brand-ink, #0A1F3D)');
+	meshLines.setAttribute('stroke-width', '0.8');
+	meshLines.setAttribute('opacity', '0.35');
+	svg.appendChild(meshLines);
+
+	parent.appendChild(svg);
+	return svg;
+}
 
 export class StartEditor extends EditorPane {
 
 	private container!: HTMLElement;
 	private scrollable!: DomScrollableElement;
+	private main!: HTMLElement;
+	private readonly pageDisposables = this._register(new DisposableStore());
+	private readonly sideDisposables = this._register(new DisposableStore());
 
 	constructor(
 		group: IEditorGroup,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IThemeService themeService: IThemeService,
-		@IStorageService storageService: IStorageService,
-		@IEditorService private readonly editorService: IEditorService,
+		@IStorageService private readonly storageService: IStorageService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@ICommandService private readonly commandService: ICommandService,
+		@IFileDialogService private readonly fileDialogService: IFileDialogService,
+		@IPathService private readonly pathService: IPathService,
 		@IMAEngineProjectService private readonly projectService: IMAEngineProjectService,
+		@IEnvironmentService private readonly environmentService: IEnvironmentService,
+		@IFileService private readonly fileService: IFileService,
 	) {
 		super(StartEditorInput.EDITOR_ID, group, telemetryService, themeService, storageService);
 	}
 
 	protected createEditor(parent: HTMLElement): void {
-		this.container = $('.maengine-start-page');
-		this.container.style.cssText = 'height: 100%; width: 100%; overflow-y: auto; overflow-x: hidden; padding: 36px 40px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
-		this.scrollable = this._register(new DomScrollableElement(this.container, { horizontal: ScrollbarVisibility.Hidden, vertical: ScrollbarVisibility.Auto }));
-		const domNode = this.scrollable.getDomNode();
-		domNode.style.width = '100%';
-		domNode.style.height = '100%';
-		append(parent, domNode);
+		this.container = $('.maengine-start');
+		this.scrollable = this._register(new DomScrollableElement(this.container, {
+			horizontal: ScrollbarVisibility.Hidden,
+			vertical: ScrollbarVisibility.Auto,
+		}));
+		append(parent, this.scrollable.getDomNode());
 	}
 
 	override async setInput(input: StartEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
 		await super.setInput(input, options, context, token);
-		this.render();
+		this.renderShell();
+		this.renderMainContent();
 	}
 
-	private render(): void {
-		clearNode(this.container);
-
-		const wrapper = append(this.container, $('.start-wrapper'));
-		wrapper.style.cssText = 'max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; padding-bottom: 60px;';
-
-		// =========================================================================
-		// 1. HERO HEADER: BIG BOLD "HELLO WORLD"
-		// =========================================================================
-		const heroSection = append(wrapper, $('.hello-world-hero'));
-		heroSection.style.cssText = 'text-align: center; padding: 40px 24px; background: radial-gradient(ellipse at top, rgba(9, 132, 227, 0.35) 0%, rgba(0, 206, 201, 0.18) 45%, transparent 75%); border-radius: 16px; border: 2px solid rgba(0, 206, 201, 0.45); box-shadow: 0 10px 40px rgba(0,0,0,0.45); position: relative; overflow: hidden;';
-
-		const helloTitle = append(heroSection, $('h1.hero-hello'));
-		helloTitle.style.cssText = 'font-size: 72px; font-weight: 900; letter-spacing: 8px; margin: 0 0 14px 0; color: #00d2ff; text-transform: uppercase; line-height: 1.1; display: block; text-align: center; text-shadow: 0 0 40px rgba(0,210,255,0.6), 0 0 80px rgba(0,210,255,0.3);';
-		helloTitle.textContent = 'HELLO WORLD';
-
-		const helloSubtitle = append(heroSection, $('div.hero-sub'));
-		helloSubtitle.style.cssText = 'font-size: 22px; font-weight: 700; color: var(--vscode-foreground); margin-bottom: 8px; letter-spacing: -0.2px;';
-		helloSubtitle.textContent = 'MAEngine: Mechanical Analysis Engine & Simulation Workbench';
-
-		const helloDesc = append(heroSection, $('div.hero-desc'));
-		helloDesc.style.cssText = 'font-size: 14px; color: var(--vscode-descriptionForeground); max-width: 720px; margin: 0 auto 20px auto; line-height: 1.6;';
-		helloDesc.textContent = 'Standalone open-source desktop CAE suite orchestrating build123d / OpenCASCADE 3D CAD, Gmsh HXT Delaunay conformal meshing, multi-threaded CalculiX CrunchiX FEA, and hardware-accelerated 3D post-processing.';
-
-		const badgeRow = append(heroSection, $('div.hero-badges'));
-		badgeRow.style.cssText = 'display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;';
-		const badges = [
-			{ text: 'CAD: build123d / OpenCASCADE', bg: '#6c5ce7' },
-			{ text: 'Mesher: Gmsh v4.15 HXT 3D', bg: '#f39c12' },
-			{ text: 'Solver: CalculiX ccx (Multi-Threaded)', bg: '#00b894' },
-			{ text: '3D Viewport: WebGL Stress & Warps', bg: '#0984e3' },
-			{ text: 'Decks: 100% Git-Diffable YAML', bg: '#e17055' }
-		];
-		for (const b of badges) {
-			const badge = append(badgeRow, $('span'));
-			badge.style.cssText = `background: ${b.bg}22; color: ${b.bg}; border: 1px solid ${b.bg}66; border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 600;`;
-			badge.textContent = b.text;
-		}
-
-		// Quick Action Buttons inside Hero
-		const heroActionRow = append(heroSection, $('div.hero-actions'));
-		heroActionRow.style.cssText = 'display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;';
-
-		const heroBenchmarkBtn = append(heroActionRow, $('button')) as HTMLButtonElement;
-		heroBenchmarkBtn.style.cssText = 'background: linear-gradient(135deg, #0984e3, #00cec9); color: #fff; border: none; border-radius: 6px; padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(9,132,227,0.4); transition: transform 0.15s;';
-		heroBenchmarkBtn.textContent = '⚡ Run Cantilever Benchmark';
-		heroBenchmarkBtn.onclick = () => {
-			this.commandService.executeCommand('maengine.runPipeline');
-		};
-
-		const heroNewBtn = append(heroActionRow, $('button')) as HTMLButtonElement;
-		heroNewBtn.style.cssText = 'background: var(--vscode-button-secondaryBackground, #2d3436); color: var(--vscode-button-secondaryForeground, #fff); border: 1px solid var(--vscode-widget-border, #444); border-radius: 6px; padding: 11px 20px; font-size: 14px; font-weight: 500; cursor: pointer;';
-		heroNewBtn.textContent = '📁 New Simulation Project';
-		heroNewBtn.onclick = () => {
-			const input = document.getElementById('maengine-proj-name-input') as HTMLInputElement | null;
-			if (input) input.focus();
-		};
-
-		const heroBrowseBtn = append(heroActionRow, $('button')) as HTMLButtonElement;
-		heroBrowseBtn.style.cssText = 'background: transparent; color: var(--vscode-foreground); border: 1px solid var(--vscode-widget-border, #444); border-radius: 6px; padding: 11px 20px; font-size: 14px; font-weight: 500; cursor: pointer;';
-		heroBrowseBtn.textContent = '📂 Open Existing Folder...';
-		heroBrowseBtn.onclick = () => {
-			this.commandService.executeCommand('workbench.action.files.openFolder');
-		};
-
-		// =========================================================================
-		// 2. INTERACTIVE SIMULATION BENCHMARK RUNNER
-		// =========================================================================
-		const benchmarkCard = append(wrapper, $('.benchmark-card'));
-		benchmarkCard.style.cssText = 'background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border, #333); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px;';
-
-		const bmHeader = append(benchmarkCard, $('.bm-header'));
-		bmHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--vscode-widget-border, #333); padding-bottom: 12px;';
-
-		const bmTitleBox = append(bmHeader, $('div'));
-		const bmTitle = append(bmTitleBox, $('h2'));
-		bmTitle.style.cssText = 'margin: 0; font-size: 18px; font-weight: 600; color: var(--vscode-foreground);';
-		bmTitle.textContent = '🧪 Bundled NAFEMS Verification Benchmark: Cantilever Beam Bending';
-
-		const bmSub = append(bmTitleBox, $('div'));
-		bmSub.style.cssText = 'font-size: 12px; color: var(--vscode-descriptionForeground); margin-top: 4px;';
-		bmSub.textContent = 'Verified against Euler-Bernoulli analytical beam deflection: v = (F * L³) / (3 * E * I)';
-
-		const runPipelineBtn = append(bmHeader, $('button')) as HTMLButtonElement;
-		runPipelineBtn.style.cssText = 'background: #00b894; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;';
-		runPipelineBtn.textContent = '▶ Run Verification Pipeline';
-
-		// Results Grid
-		const resultsGrid = append(benchmarkCard, $('.results-grid'));
-		resultsGrid.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;';
-
-		const metrics = [
-			{ label: 'Max Deflection', value: '12.4061 mm', note: 'Analytical: 12.381 mm (99.8% accurate)', color: '#0984e3' },
-			{ label: 'Max Von Mises Stress', value: '3,918.36 MPa', note: 'Analytical: 3,900.00 MPa (99.5% accurate)', color: '#e84393' },
-			{ label: 'Finite Element Mesh', value: '436 Nodes / 161 Tets', note: 'Gmsh TET10 High-Order Quadratic', color: '#f39c12' },
-			{ label: 'CalculiX Solve Time', value: '0.46 seconds', note: 'Multi-threaded ccx.exe implicit solver', color: '#00b894' }
-		];
-
-		for (const m of metrics) {
-			const mBox = append(resultsGrid, $('.metric-box'));
-			mBox.style.cssText = 'background: var(--vscode-sideBar-background, rgba(0,0,0,0.2)); border: 1px solid var(--vscode-widget-border, #333); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 4px;';
-
-			const mLabel = append(mBox, $('span'));
-			mLabel.style.cssText = 'font-size: 11px; font-weight: 500; color: var(--vscode-descriptionForeground); text-transform: uppercase;';
-			mLabel.textContent = m.label;
-
-			const mVal = append(mBox, $('span'));
-			mVal.style.cssText = `font-size: 18px; font-weight: 700; color: ${m.color};`;
-			mVal.textContent = m.value;
-
-			const mNote = append(mBox, $('span'));
-			mNote.style.cssText = 'font-size: 11px; color: var(--vscode-descriptionForeground); margin-top: 2px;';
-			mNote.textContent = m.note;
-		}
-
-		// Log terminal display
-		const terminalBox = append(benchmarkCard, $('.benchmark-terminal'));
-		terminalBox.style.cssText = 'background: #11141a; border: 1px solid #222936; border-radius: 6px; padding: 12px 16px; font-family: "Consolas", "Courier New", monospace; font-size: 12px; color: #a4b0be; line-height: 1.6; white-space: pre-wrap;';
-		terminalBox.textContent = `[*] Loading MAEngine simulation specification from: examples/cantilever_beam/simulation.yaml
-[+] Conformal 3D quadratic mesh generated: 436 nodes, 161 TET10 elements (Gmsh HXT Delaunay)
-[+] CalculiX input deck compiled: Cantilever_Beam_Bending.inp
-[+] Running CalculiX CrunchiX (ccx.exe)... Solved successfully in 0.46s
-[+] Result converted to VTK Unstructured Grid (.vtu)
-[+] 3D glTF 2.0 Viewport scene generated: sim_output/results.gltf`;
-
-		runPipelineBtn.onclick = () => {
-			this.notificationService.info('Running MAEngine Cantilever Beam Verification Pipeline in Integrated Terminal...');
-			runPipelineBtn.textContent = '⚡ Running Pipeline...';
-			runPipelineBtn.style.background = '#0984e3';
-			this.commandService.executeCommand('maengine.runPipeline');
-		};
-
-		// =========================================================================
-		// 3. COMPLETE FEATURE SETS OF MAENGINE
-		// =========================================================================
-		const featuresHeader = append(wrapper, $('.features-header'));
-		featuresHeader.style.cssText = 'border-bottom: 1px solid var(--vscode-widget-border, #333); padding-bottom: 12px;';
-
-		const featTitle = append(featuresHeader, $('h2'));
-		featTitle.style.cssText = 'margin: 0; font-size: 22px; font-weight: 700; color: var(--vscode-foreground);';
-		featTitle.textContent = '🛠️ MAEngine Core Engineering Feature Sets';
-
-		const featSub = append(featuresHeader, $('p'));
-		featSub.style.cssText = 'margin: 4px 0 0 0; font-size: 13px; color: var(--vscode-descriptionForeground);';
-		featSub.textContent = 'Integrated open-source CAE building blocks providing an end-to-end simulation workflow inside Code - OSS.';
-
-		const featuresGrid = append(wrapper, $('.features-grid'));
-		featuresGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;';
-
-		const featureSets: Array<{ no: string; name: string; tag: string; color: string; desc: string; action: string; openEditor: () => void }> = [
-			{
-				no: '01',
-				name: 'Parametric 3D CAD & Geometry Engine',
-				tag: 'build123d / OpenCASCADE (OCCT)',
-				color: '#6c5ce7',
-				desc: 'Python-scripted parametric B-Rep CAD, STEP/IGES format translation, automated boolean defeaturing, and semantic topological selectors that eliminate Topological Naming Problems (TNP).',
-				action: '→ Open CAD Workspace',
-				openEditor: () => this.editorService.openEditor(new CadEditorInput(URI.from({ scheme: 'maengine', path: '/geometry' })), { pinned: true }),
-			},
-			{
-				no: '02',
-				name: 'Engineering Material Library',
-				tag: 'Elastic-Plastic + Thermal Properties',
-				color: '#00cec9',
-				desc: 'Full material property cards for CalculiX FEA: Young\'s Modulus, Poisson\'s Ratio, mass density, yield strength, thermal conductivity, and expansion coefficients.',
-				action: '→ Material Library',
-				openEditor: () => this.editorService.openEditor(new MaterialEditorInput(URI.from({ scheme: 'maengine', path: '/materials' })), { pinned: true }),
-			},
-			{
-				no: '03',
-				name: 'Conformal Multi-Body 3D Mesher',
-				tag: 'Gmsh 4.15 API / HXT 3D Delaunay',
-				color: '#f39c12',
-				desc: 'Automated shared topology splitting (gmsh.model.occ.fragment), multi-threaded HXT Delaunay 3D tet meshing, high-order TET10 quadratic elements, and curvature-adaptive refinement.',
-				action: '→ Mesh Generator',
-				openEditor: () => this.editorService.openEditor(new MeshEditorInput(URI.from({ scheme: 'maengine', path: '/mesh' })), { pinned: true }),
-			},
-			{
-				no: '04',
-				name: 'Physics Decks & Boundary Conditions',
-				tag: 'SimOps Declarative YAML',
-				color: '#e74c3c',
-				desc: 'Kinematic constraints (fixed root, frictionless supports, cylindrical pins), surface traction loads, point forces, gravity body forces, and thermal boundary conditions.',
-				action: '→ Configure Physics',
-				openEditor: () => this.editorService.openEditor(new PhysicsEditorInput(URI.from({ scheme: 'maengine', path: '/physics' })), { pinned: true }),
-			},
-			{
-				no: '05',
-				name: 'CalculiX CrunchiX (ccx) Solver Manager',
-				tag: 'Multi-Threaded SPOOLES ccx.exe',
-				color: '#00b894',
-				desc: 'Bundled NAFEMS-verified implicit solver supporting linear and nonlinear large-strain elastoplasticity, contact surface mechanics, Lanczos modal eigenvalue extraction, and coupled thermo-mechanical analysis.',
-				action: '→ Solver Manager',
-				openEditor: () => this.editorService.openEditor(new SolverEditorInput(URI.from({ scheme: 'maengine', path: '/solver' })), { pinned: true }),
-			},
-			{
-				no: '06',
-				name: 'Hardware-Accelerated 3D Post-Processing',
-				tag: 'Three.js / WebGL / PyVista / VTK',
-				color: '#0984e3',
-				desc: 'Interactive 3D stress contours (Von Mises, Tresca, Max Principal), deformed shape displacement warp exaggeration, dynamic section clipping planes, probe graphs, and glTF 2.0 scene export.',
-				action: '→ 3D Results Viewer',
-				openEditor: () => this.editorService.openEditor(new ResultsEditorInput(URI.from({ scheme: 'maengine', path: '/results' })), { pinned: true }),
-			},
-			{
-				no: '07',
-				name: 'Engineering Simulation Marketplace',
-				tag: 'Community Template Registry',
-				color: '#e84393',
-				desc: 'Extensible Simulation Template Hub with verified engineering benchmarks: cantilever beam bending, bolted flange contact, turbine thermal conduction, automotive crash, and drop testing.',
-				action: '→ Browse Marketplace',
-				openEditor: () => this.editorService.openEditor(new MarketplaceEditorInput(URI.from({ scheme: 'maengine', path: '/marketplace' })), { pinned: true }),
-			},
-			{
-				no: '08',
-				name: 'Multiphysics & Durability Integrations',
-				tag: 'Elmer FEM / pyLife / OpenCourant',
-				color: '#fdcb6e',
-				desc: 'Future-ready multiphysics couplings with Elmer FEM (electromagnetics, induction heating), pyLife (FKM-guideline fatigue S-N curves), and OpenCourant / OpenRadioss explicit impact dynamics.',
-				action: '→ Explore Solvers',
-				openEditor: () => this.notificationService.info('Multiphysics integrations coming in MAEngine v2.0'),
-			}
-		];
-
-		for (const f of featureSets) {
-			const card = append(featuresGrid, $('.feature-card'));
-			card.style.cssText = `background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border, #333); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;`;
-			card.onmouseenter = () => { card.style.borderColor = f.color; card.style.boxShadow = `0 0 20px ${f.color}22`; };
-			card.onmouseleave = () => { card.style.borderColor = 'var(--vscode-widget-border, #333)'; card.style.boxShadow = 'none'; };
-
-			const topRow = append(card, $('.card-top'));
-			topRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
-
-			const num = append(topRow, $('span'));
-			num.style.cssText = `font-size: 13px; font-weight: 800; color: ${f.color};`;
-			num.textContent = `FEATURE ${f.no}`;
-
-			const tag = append(topRow, $('span'));
-			tag.style.cssText = `font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: ${f.color}22; color: ${f.color};`;
-			tag.textContent = f.tag;
-
-			const name = append(card, $('h3'));
-			name.style.cssText = 'margin: 0; font-size: 16px; font-weight: 600; color: var(--vscode-foreground);';
-			name.textContent = f.name;
-
-			const desc = append(card, $('p'));
-			desc.style.cssText = 'margin: 0; font-size: 13px; color: var(--vscode-descriptionForeground); line-height: 1.5; flex: 1;';
-			desc.textContent = f.desc;
-
-			const cardBtn = append(card, $('button')) as HTMLButtonElement;
-			cardBtn.style.cssText = `background: ${f.color}18; color: ${f.color}; border: 1px solid ${f.color}44; border-radius: 4px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; align-self: flex-start; margin-top: 4px;`;
-			cardBtn.textContent = f.action;
-			cardBtn.onmouseenter = () => { cardBtn.style.background = f.color; cardBtn.style.color = '#fff'; };
-			cardBtn.onmouseleave = () => { cardBtn.style.background = `${f.color}18`; cardBtn.style.color = f.color; };
-			cardBtn.onclick = (e) => { e.stopPropagation(); f.openEditor(); };
-			card.onclick = () => f.openEditor();
-		}
-
-		// =========================================================================
-		// 4. PROJECT CREATION & REPOSITORIES
-		// =========================================================================
-		const projectGrid = append(wrapper, $('.project-grid'));
-		projectGrid.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px;';
-
-		// Create New Project Card
-		const newCard = append(projectGrid, $('.project-card'));
-		newCard.style.cssText = 'background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border, #333); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px;';
-
-		const newTitle = append(newCard, $('h3'));
-		newTitle.style.cssText = 'margin: 0; font-size: 17px; font-weight: 600; color: var(--vscode-foreground);';
-		newTitle.textContent = '🚀 Create New Simulation Project';
-
-		const nameLabel = append(newCard, $('label'));
-		nameLabel.style.cssText = 'font-size: 12px; font-weight: 500; color: var(--vscode-descriptionForeground);';
-		nameLabel.textContent = 'Study / Project Name:';
-
-		const nameInput = append(newCard, $('input')) as HTMLInputElement;
-		nameInput.id = 'maengine-proj-name-input';
-		nameInput.style.cssText = 'background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, #444); border-radius: 4px; padding: 8px 12px; font-size: 14px;';
-		nameInput.value = 'Cantilever_FEA_Study';
-
-		const unitLabel = append(newCard, $('label'));
-		unitLabel.style.cssText = 'font-size: 12px; font-weight: 500; color: var(--vscode-descriptionForeground);';
-		unitLabel.textContent = 'Engineering Unit System:';
-
-		const unitSelect = append(newCard, $('select')) as HTMLSelectElement;
-		unitSelect.style.cssText = 'background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border: 1px solid var(--vscode-dropdown-border, #444); border-radius: 4px; padding: 8px 12px; font-size: 14px;';
-		
-		const u1 = append(unitSelect, $('option')) as HTMLOptionElement;
-		u1.value = 'mm_N_MPa_tonne_s';
-		u1.textContent = 'mm, N, MPa, tonne, s (Mechanical CAE Standard)';
-		u1.selected = true;
-
-		const u2 = append(unitSelect, $('option')) as HTMLOptionElement;
-		u2.value = 'm_N_Pa_kg_s';
-		u2.textContent = 'm, N, Pa, kg, s (Standard SI)';
-
-		const u3 = append(unitSelect, $('option')) as HTMLOptionElement;
-		u3.value = 'in_lbf_psi';
-		u3.textContent = 'in, lbf, psi, slug, s (US Customary Units)';
-
-		const createBtn = append(newCard, $('button')) as HTMLButtonElement;
-		createBtn.style.cssText = 'background: var(--vscode-button-background, #0984e3); color: var(--vscode-button-foreground, #fff); border: none; border-radius: 4px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 6px;';
-		createBtn.textContent = 'Initialize Project Workspace';
-		createBtn.onclick = async () => {
-			const name = nameInput.value.trim() || 'New_Simulation_Project';
-			const units = unitSelect.value as UnitSystem;
-			try {
-				this.commandService.executeCommand('maengine.project.create', { name, units });
-			} catch (e) {
-				this.notificationService.error(String(e));
-			}
-		};
-
-		// Open Existing Project Card
-		const openCard = append(projectGrid, $('.project-card'));
-		openCard.style.cssText = 'background: var(--vscode-editor-background); border: 1px solid var(--vscode-widget-border, #333); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px;';
-
-		const openTitle = append(openCard, $('h3'));
-		openTitle.style.cssText = 'margin: 0; font-size: 17px; font-weight: 600; color: var(--vscode-foreground);';
-		openTitle.textContent = '📂 Open Existing Project & Benchmarks';
-
-		const openDesc = append(openCard, $('p'));
-		openDesc.style.cssText = 'margin: 0; font-size: 13px; color: var(--vscode-descriptionForeground); line-height: 1.5;';
-		openDesc.textContent = 'Open any workspace containing a .maengine simulation manifest or declarative simulation.yaml deck.';
-
-		const openFolderBtn = append(openCard, $('button')) as HTMLButtonElement;
-		openFolderBtn.style.cssText = 'background: var(--vscode-button-secondaryBackground, #2d3436); color: var(--vscode-button-secondaryForeground, #fff); border: 1px solid var(--vscode-widget-border, #444); border-radius: 4px; padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer;';
-		openFolderBtn.textContent = 'Browse Project Folder...';
-		openFolderBtn.onclick = () => {
-			this.commandService.executeCommand('workbench.action.files.openFolder');
-		};
-
-		const bmListTitle = append(openCard, $('div'));
-		bmListTitle.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--vscode-foreground); margin-top: 4px;';
-		bmListTitle.textContent = 'Quick-Load Verified Benchmarks:';
-
-		const bmList = append(openCard, $('div.quick-bm-list'));
-		bmList.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
-
-		const samples = [
-			{ name: 'Cantilever Beam Bending (Linear Statics)', file: 'cantilever_beam' },
-			{ name: 'Square Plate Eigenfrequency (Lanczos Modal)', file: 'square_plate' },
-			{ name: 'Thermal Conduction Block (Steady-State Flux)', file: 'thermal_block' }
-		];
-
-		for (const s of samples) {
-			const item = append(bmList, $('div.bm-quick-item'));
-			item.style.cssText = 'padding: 8px 12px; border-radius: 4px; border: 1px solid var(--vscode-widget-border, #444); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; transition: background 0.15s;';
-			item.onmouseenter = () => item.style.background = 'var(--vscode-list-hoverBackground, rgba(255,255,255,0.06))';
-			item.onmouseleave = () => item.style.background = 'transparent';
-			item.onclick = () => {
-				this.commandService.executeCommand('maengine.project.loadBenchmark', s.name);
-			};
-
-			const sName = append(item, $('span'));
-			sName.style.cssText = 'color: var(--vscode-textLink-foreground, #3498db); font-weight: 500;';
-			sName.textContent = s.name;
-
-			const sArrow = append(item, $('span'));
-			sArrow.textContent = '→';
-			sArrow.style.cssText = 'color: var(--vscode-descriptionForeground); font-size: 14px;';
-		}
+	override clearInput(): void {
+		this.pageDisposables.clear();
+		this.sideDisposables.clear();
+		super.clearInput();
 	}
 
-	override layout(dimension: { width: number; height: number }): void {
+	override layout(dimension: Dimension): void {
 		this.container.style.width = `${dimension.width}px`;
 		this.container.style.height = `${dimension.height}px`;
-		this.scrollable.getDomNode().style.width = `${dimension.width}px`;
-		this.scrollable.getDomNode().style.height = `${dimension.height}px`;
 		this.scrollable.scanDomNode();
+	}
+
+	private renderShell(): void {
+		this.sideDisposables.clear();
+		clearNode(this.container);
+
+		const shell = append(this.container, $('.shell'));
+		const side = append(shell, $('aside.side'));
+
+		// Brand header
+		const brand = append(side, $('.brand'));
+		renderBrandMarkSvg(brand);
+		append(brand, $('span.divider'));
+		const brandText = append(brand, $('.brand-text'));
+		const h1 = append(brandText, $('h1'));
+		append(h1, $('span.brand-prefix', undefined, 'MA'));
+		append(h1, $('span.brand-suffix', undefined, 'Engine'));
+		append(brandText, $('p.subtitle', undefined, localize('start.subtitle', "Mechanical analysis and simulation")));
+
+		// Start actions
+		const actions = append(side, $('nav.actions', { 'aria-label': localize('start.actions', "Start") }));
+
+		const makeAction = (icon: ThemeIcon, label: string, onClick: () => void) => {
+			const button = append(actions, $('button.action', { type: 'button' }));
+			append(button, $(`span${ThemeIcon.asCSSSelector(icon)}`));
+			append(button, $('span.label', undefined, label));
+			this.sideDisposables.add(addDisposableListener(button, EventType.CLICK, onClick));
+			return button;
+		};
+
+		makeAction(Codicon.newFolder, localize('start.new', "New Project..."), () => this.newProject());
+		makeAction(Codicon.folderOpened, localize('start.open', "Open Project..."), () => this.openProject());
+		makeAction(Codicon.library, localize('start.benchmark', "Open Benchmark Study..."), () => this.openBenchmark());
+		makeAction(Codicon.play, localize('start.solver', "Open Solver Manager..."), () => this.openSolver());
+
+		this.main = append(shell, $('main.main'));
+
+		// Footer
+		const credits = append(this.container, $('footer.credits'));
+		append(credits, $('p', undefined, localize('start.footerTitle', "MAEngine — Mechanical Analysis Engine")));
+		append(credits, $('p', undefined, localize('start.footerLicense', "Open-source finite-element analysis suite.")));
+	}
+
+	private renderMainContent(): void {
+		this.pageDisposables.clear();
+		clearNode(this.main);
+
+		// 1. "How a study works" strip (6 stages)
+		const workflowSection = append(this.main, $('.section.workflow'));
+		append(workflowSection, $('h2', undefined, localize('start.workflowTitle', "How a study works")));
+
+		const stages = [
+			{ num: '01', title: localize('stage.geometry', "Geometry"), desc: localize('stage.geometryDesc', "CAD B-Rep geometry and STEP model.") },
+			{ num: '02', title: localize('stage.materials', "Materials"), desc: localize('stage.materialsDesc', "Elasticity, plasticity, and density.") },
+			{ num: '03', title: localize('stage.mesh', "Mesh"), desc: localize('stage.meshDesc', "Conformal tetrahedral 3D elements.") },
+			{ num: '04', title: localize('stage.physics', "Physics"), desc: localize('stage.physicsDesc', "Boundary constraints and applied loads.") },
+			{ num: '05', title: localize('stage.solve', "Solve"), desc: localize('stage.solveDesc', "CalculiX FEA execution and output.") },
+			{ num: '06', title: localize('stage.results', "Results"), desc: localize('stage.resultsDesc', "Field contours, deformation, and reports.") },
+		];
+
+		const grid = append(workflowSection, $('.workflow-grid'));
+		for (const s of stages) {
+			const step = append(grid, $('.workflow-step'));
+			const header = append(step, $('.workflow-step-header'));
+			append(header, $('span.workflow-step-num', undefined, s.num));
+			append(header, $('span.workflow-step-title', undefined, s.title));
+			append(step, $('p.workflow-step-desc', undefined, s.desc));
+		}
+
+		// 2. Recent projects list
+		const recentSection = append(this.main, $('.section.recent-projects'));
+		append(recentSection, $('h2', undefined, localize('start.recentTitle', "Recent Projects")));
+
+		const list = append(recentSection, $('ul.recent'));
+		const recent = this.getRecentProjects();
+
+		if (!recent.length) {
+			append(list, $('li.empty', undefined, localize('start.noRecent', "No recent projects. Create a new project or open the benchmark study to begin.")));
+		} else {
+			for (const item of recent) {
+				const li = append(list, $('li'));
+				const button = append(li, $('button.recent-project', { type: 'button', title: item.path }));
+				const top = append(button, $('span.top'));
+				append(top, $('span.name', undefined, item.name));
+				const dateStr = formatOpenedDate(item.opened);
+				append(top, $('span.date', { 'aria-label': localize('start.lastOpened', "Last opened {0}", dateStr) }, dateStr));
+				append(button, $('span.path', undefined, item.path));
+
+				this.pageDisposables.add(addDisposableListener(button, EventType.CLICK, () => {
+					this.recordOpened(item.path, item.name);
+					void this.commandService.executeCommand('vscode.openFolder', URI.file(item.path));
+				}));
+			}
+		}
+
+		this.scrollable.scanDomNode();
+	}
+
+	private getRecentProjects(): IRecentProjectEntry[] {
+		let map: Record<string, { name: string; opened: number }> = {};
+		try {
+			const raw = this.storageService.get(OPENED_STORAGE_KEY, StorageScope.APPLICATION, '{}');
+			map = JSON.parse(raw);
+		} catch {
+			map = {};
+		}
+
+		const entries: IRecentProjectEntry[] = Object.entries(map).map(([path, data]) => ({
+			path,
+			name: data.name || basename(URI.file(path)),
+			opened: data.opened || Date.now(),
+		}));
+
+		entries.sort((a, b) => b.opened - a.opened);
+		return entries.slice(0, 8);
+	}
+
+	private recordOpened(path: string, name: string): void {
+		let map: Record<string, { name: string; opened: number }> = {};
+		try {
+			const raw = this.storageService.get(OPENED_STORAGE_KEY, StorageScope.APPLICATION, '{}');
+			map = JSON.parse(raw);
+		} catch {
+			map = {};
+		}
+		map[path] = { name, opened: Date.now() };
+		this.storageService.store(OPENED_STORAGE_KEY, JSON.stringify(map), StorageScope.APPLICATION, StorageTarget.MACHINE);
+	}
+
+	private async newProject(): Promise<void> {
+		try {
+			const defaultHome = await this.pathService.userHome();
+			const picked = await this.fileDialogService.showOpenDialog({
+				title: localize('start.newProjectLocation', "Select Location for New Project"),
+				canSelectFolders: true,
+				canSelectFiles: false,
+				canSelectMany: false,
+				defaultUri: defaultHome,
+			});
+			if (!picked?.[0]) {
+				return;
+			}
+			const targetFolder = picked[0];
+			const projectName = 'Simulation_Project';
+			const project = await this.projectService.createProject(targetFolder, projectName, 'mm_N_MPa_tonne_s');
+			this.recordOpened(project.root.fsPath, projectName);
+			await this.commandService.executeCommand('vscode.openFolder', project.root);
+		} catch (error) {
+			this.notificationService.error(error as Error);
+		}
+	}
+
+	private async openProject(): Promise<void> {
+		try {
+			const defaultHome = await this.pathService.userHome();
+			const picked = await this.fileDialogService.showOpenDialog({
+				title: localize('start.openProject', "Open MAEngine Project"),
+				canSelectFolders: true,
+				canSelectFiles: false,
+				canSelectMany: false,
+				defaultUri: defaultHome,
+			});
+			if (!picked?.[0]) {
+				return;
+			}
+			const folder = picked[0];
+			this.recordOpened(folder.fsPath, basename(folder));
+			await this.commandService.executeCommand('vscode.openFolder', folder);
+		} catch (error) {
+			this.notificationService.error(error as Error);
+		}
+	}
+
+	private async openBenchmark(): Promise<void> {
+		try {
+			const benchmarkUri = await resolveBenchmarkUri(this.environmentService, this.fileService);
+			if (!benchmarkUri) {
+				this.notificationService.error(localize('benchmarkNotFound', "Cantilever Beam benchmark project could not be found (expected 'examples/cantilever_beam')."));
+				return;
+			}
+			this.recordOpened(benchmarkUri.fsPath, 'Cantilever Beam Benchmark');
+			await this.commandService.executeCommand('vscode.openFolder', benchmarkUri);
+		} catch (error) {
+			this.notificationService.error(error as Error);
+		}
+	}
+
+	private async openSolver(): Promise<void> {
+		try {
+			await this.commandService.executeCommand('maengine.solver.runAll');
+		} catch (error) {
+			this.notificationService.error(error as Error);
+		}
 	}
 }

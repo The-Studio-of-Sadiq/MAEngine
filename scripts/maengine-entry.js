@@ -21,6 +21,13 @@ if (!process.argv.some(arg => arg === '--user-data-dir' || arg.startsWith('--use
 	process.argv.push(`--user-data-dir=${appData}\\MAEngine`);
 }
 
+// In dev mode VS Code expects to be started as `electron <app-path> <args>` and drops the first
+// non-flag argument as the app path (argvHelper.stripAppPath). A packaged exe has no app-path
+// argument, so without this VS Code would throw away the user's folder argument, or, if there
+// is none, ALL arguments (including --user-data-dir). Insert the app path where it expects it.
+const appPath = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+process.argv.splice(1, 0, decodeURIComponent(appPath));
+
 if (!process.env.NODE_ENV) {
 	process.env.NODE_ENV = 'development';
 }

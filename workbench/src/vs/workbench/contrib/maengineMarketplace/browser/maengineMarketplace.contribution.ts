@@ -12,7 +12,7 @@ import { MarketplaceEditor } from './marketplaceEditor.js';
 import { MarketplaceEditorInput } from './marketplaceEditorInput.js';
 
 Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane(
-	EditorPaneDescriptor.create(MarketplaceEditor, MarketplaceEditorInput.EDITOR_ID, localize('marketplaceEditor', "08 Marketplace Hub")),
+	EditorPaneDescriptor.create(MarketplaceEditor, MarketplaceEditorInput.EDITOR_ID, localize('marketplaceEditor', "Marketplace")),
 	[new SyncDescriptor(MarketplaceEditorInput)]
 );
 

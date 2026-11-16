@@ -3,25 +3,62 @@
  *  Licensed under the MIT license.
  *--------------------------------------------------------------------------------------------*/
 
-import { $, append, clearNode } from '../../../../base/browser/dom.js';
-import { DomScrollableElement } from '../../../../base/browser/ui/scrollbar/scrollableElement.js';
+import './media/cadEditor.css';
+import { $, addDisposableListener, append, clearNode, EventType } from '../../../../base/browser/dom.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { dirname } from '../../../../base/common/resources.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { ScrollbarVisibility } from '../../../../base/common/scrollable.js';
 import { localize } from '../../../../nls.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
+import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
+import { EditorFrame } from '../../maengineProject/browser/editorFrame.js';
+import { IMAEnginePropertiesDockService } from '../../maengineProject/browser/propertiesDock.js';
+import { MAEngineTables } from '../../maengineProject/browser/tablesView.js';
+import { IPartStatus, resolvePartStatus } from '../../maengineProject/browser/projectParts.js';
+import { IMAEngineProjectService } from '../../../services/maengineProject/common/maengineProject.js';
 import { CadEditorInput } from './cadEditorInput.js';
+
+interface ICadBody {
+	readonly id: string;
+	readonly name: string;
+	readonly material?: string;
+	readonly volume_mm3?: number;
+}
+
+interface ICadSelector {
+	readonly name: string;
+	readonly type: string;
+	readonly rule?: string;
+	readonly bounds?: readonly number[];
+}
+
+interface ICadData {
+	readonly schema?: number;
+	readonly cadFile?: string;
+	readonly bodies?: readonly ICadBody[];
+	readonly selectors?: readonly ICadSelector[];
+}
 
 export class CadEditor extends EditorPane {
 
-	private container!: HTMLElement;
-	private scrollable!: DomScrollableElement;
+	private frame!: EditorFrame;
+	private viewport3d!: HTMLElement;
+	private bodiesContainer!: HTMLElement;
+	private selectedBodyId: string | undefined;
+	private currentStatus: IPartStatus | undefined;
+
+	private readonly inputDisposables = this._register(new DisposableStore());
 
 	constructor(
 		group: IEditorGroup,
@@ -29,132 +66,269 @@ export class CadEditor extends EditorPane {
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
 		@IFileService private readonly fileService: IFileService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IMAEnginePropertiesDockService private readonly propertiesDockService: IMAEnginePropertiesDockService,
+		@ICommandService private readonly commandService: ICommandService,
+		@INotificationService private readonly notificationService: INotificationService,
+		@IMAEngineProjectService private readonly projectService: IMAEngineProjectService,
 	) {
 		super(CadEditorInput.EDITOR_ID, group, telemetryService, themeService, storageService);
 	}
 
 	protected createEditor(parent: HTMLElement): void {
-		this.container = $('.maengine-cad-editor');
-		this.container.style.cssText = 'height: 100%; width: 100%; overflow: hidden; display: flex; flex-direction: column; background: var(--vscode-editor-background); color: var(--vscode-foreground); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
-		this.scrollable = this._register(new DomScrollableElement(this.container, { horizontal: ScrollbarVisibility.Hidden, vertical: ScrollbarVisibility.Auto }));
-		append(parent, this.scrollable.getDomNode());
+		this.frame = this._register(this.instantiationService.createInstance(EditorFrame, parent, {
+			id: 'maengine.cadEditor',
+			ariaLabel: localize('cadEditor.aria', "CAD Geometry"),
+			properties: { title: localize('properties', "Properties") }
+		}));
+		this.frame.element.classList.add('maengine-cad-editor');
+		this.frame.setActions([this.frame.togglePropertiesAction]);
+
+		this._register(this.frame.createSegmented(
+			this.frame.titleSlot,
+			[
+				{ id: '3d', label: localize('cad.view3d', "3D"), icon: Codicon.symbolStructure },
+				{ id: 'bodies', label: localize('cad.bodies', "Bodies"), icon: Codicon.layers }
+			],
+			'3d',
+			mode => this.switchView(mode)
+		));
+
+		this.viewport3d = append(this.frame.main, $('.ma-cad-viewport'));
+		this.bodiesContainer = append(this.frame.main, $('.ma-cad-bodies-view'));
+
+		this.render3dViewport();
+		this.switchView('3d');
 	}
 
-	override async setInput(input: CadEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+	private render3dViewport(): void {
+		clearNode(this.viewport3d);
+
+		const box = append(this.viewport3d, $('.ma-cad-canvas-box'));
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		svg.setAttribute('width', '180');
+		svg.setAttribute('height', '120');
+		svg.setAttribute('viewBox', '0 0 180 120');
+		svg.setAttribute('fill', 'none');
+		svg.setAttribute('stroke', 'currentColor');
+		svg.setAttribute('stroke-width', '1.5');
+
+		const p1 = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+		p1.setAttribute('points', '30,85 110,40 155,65 75,110');
+		p1.setAttribute('fill', 'var(--ma-surface, #ffffff)');
+		p1.setAttribute('opacity', '0.6');
+		svg.appendChild(p1);
+
+		const p2 = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+		p2.setAttribute('points', '30,55 110,10 155,35 75,80');
+		p2.setAttribute('fill', 'var(--ma-surface, #ffffff)');
+		p2.setAttribute('opacity', '0.8');
+		svg.appendChild(p2);
+
+		const addLine = (x1: string, y1: string, x2: string, y2: string) => {
+			const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+			line.setAttribute('x1', x1);
+			line.setAttribute('y1', y1);
+			line.setAttribute('x2', x2);
+			line.setAttribute('y2', y2);
+			svg.appendChild(line);
+		};
+
+		addLine('30', '85', '30', '55');
+		addLine('110', '40', '110', '10');
+		addLine('155', '65', '155', '35');
+		addLine('75', '110', '75', '80');
+
+		box.appendChild(svg);
+		append(box, $('span', undefined, localize('cad.viewportNote', "3D CAD geometry preview")));
+
+		const triad = append(this.viewport3d, $('.ma-cad-triad'));
+		append(triad, $('span.axis-x', undefined, "X"));
+		append(triad, $('span.axis-y', undefined, "Y"));
+		append(triad, $('span.axis-z', undefined, "Z"));
+
+		this._register(addDisposableListener(this.viewport3d, EventType.CLICK, () => {
+			if (this.selectedBodyId) {
+				const data = this.currentData;
+				const body = data?.bodies?.find(b => b.id === this.selectedBodyId);
+				if (body) {
+					this.selectBody(body);
+				}
+			}
+		}));
+	}
+
+	private switchView(mode: '3d' | 'bodies'): void {
+		this.viewport3d.classList.toggle('hidden', mode !== '3d');
+		this.bodiesContainer.classList.toggle('hidden', mode !== 'bodies');
+	}
+
+	private currentData: ICadData | undefined;
+
+	override async setInput(input: EditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
 		await super.setInput(input, options, context, token);
-		await this.render(input);
+		this.inputDisposables.clear();
+
+		const resource = (input as CadEditorInput).resource;
+		if (resource) {
+			const folder = dirname(resource);
+			this.inputDisposables.add(this.fileService.onDidFilesChange(e => {
+				if (e.contains(resource) || e.affects(folder)) {
+					void this.load(resource);
+				}
+			}));
+			this.inputDisposables.add(this.projectService.onDidChangeProject(() => {
+				void this.load(resource);
+			}));
+			await this.load(resource);
+		}
 	}
 
-	private async render(input: CadEditorInput): Promise<void> {
-		clearNode(this.container);
+	override clearInput(): void {
+		this.inputDisposables.clear();
+		this.propertiesDockService.clearProperties();
+		super.clearInput();
+	}
 
-		// Toolbar
-		const toolbar = append(this.container, $('.cad-toolbar'));
-		toolbar.style.cssText = 'height: 40px; border-bottom: 1px solid var(--vscode-widget-border, #333); display: flex; align-items: center; padding: 0 16px; gap: 12px; background: var(--vscode-editorGroupHeader-tabsBackground);';
+	override dispose(): void {
+		this.propertiesDockService.clearProperties();
+		super.dispose();
+	}
 
-		const title = append(toolbar, $('span'));
-		title.style.cssText = 'font-weight: 600; font-size: 13px; color: var(--vscode-foreground);';
-		title.textContent = '3D CAD Geometry & Topological Entity Selector';
+	private async load(resource: any): Promise<void> {
+		try {
+			const content = await this.fileService.readFile(resource);
+			this.currentData = JSON.parse(content.value.toString()) as ICadData;
+		} catch {
+			this.currentData = undefined;
+		}
+		this.currentStatus = await resolvePartStatus('geometry', this.fileService, this.projectService, this.currentData, resource);
+		this.render();
+	}
 
-		const spacer = append(toolbar, $('div'));
-		spacer.style.cssText = 'flex: 1;';
+	private render(): void {
+		const data = this.currentData;
+		const bodies = data?.bodies ?? [];
+		const hasGeometry = this.currentStatus?.state === 'done';
 
-		const btnImport = append(toolbar, $('button')) as HTMLButtonElement;
-		btnImport.style.cssText = 'background: var(--vscode-button-secondaryBackground, #333); color: var(--vscode-button-secondaryForeground, #fff); border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer;';
-		btnImport.textContent = 'Import STEP / IGES...';
-
-		const btnTnp = append(toolbar, $('button')) as HTMLButtonElement;
-		btnTnp.style.cssText = 'background: var(--vscode-button-background, #0984e3); color: var(--vscode-button-foreground, #fff); border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer;';
-		btnTnp.textContent = 'Verify Semantic Selectors';
-
-		// Main Work Area: Left Sidebar (Tree / Selectors) + Right 3D Viewport
-		const workArea = append(this.container, $('.cad-workarea'));
-		workArea.style.cssText = 'flex: 1; display: flex; overflow: hidden;';
-
-		// Left Navigation Sidebar
-		const nav = append(workArea, $('.cad-nav'));
-		nav.style.cssText = 'width: 280px; border-right: 1px solid var(--vscode-widget-border, #333); padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;';
-
-		const treeTitle = append(nav, $('h4'));
-		treeTitle.style.cssText = 'margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--vscode-descriptionForeground);';
-		treeTitle.textContent = 'Model Hierarchy';
-
-		const treeList = append(nav, $('div.hierarchy-tree'));
-		treeList.style.cssText = 'display: flex; flex-direction: column; gap: 6px; font-size: 13px;';
-
-		const items = [
-			{ name: 'Solid Body: Cantilever_Beam', type: 'Solid', count: '1 Body' },
-			{ name: 'Faces (6 Total)', type: 'Faces', count: '6 Faces' },
-			{ name: '  ├── Fixed Support Face (Z=0)', type: 'Face', count: 'Area: 2,500 mm²' },
-			{ name: '  ├── Load Applied Face (Z=500)', type: 'Face', count: 'Area: 2,500 mm²' },
-			{ name: '  └── Lateral Faces (4)', type: 'Faces', count: 'Area: 100,000 mm²' },
-			{ name: 'Edges (12 Total)', type: 'Edges', count: '12 Edges' },
-			{ name: 'Vertices (8 Total)', type: 'Vertices', count: '8 Nodes' }
-		];
-
-		for (const it of items) {
-			const row = append(treeList, $('div.tree-row'));
-			row.style.cssText = 'padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; font-family: monospace; font-size: 11px;';
-			row.onmouseenter = () => row.style.background = 'var(--vscode-list-hoverBackground, rgba(255,255,255,0.05))';
-			row.onmouseleave = () => row.style.background = 'transparent';
-
-			const n = append(row, $('span'));
-			n.textContent = it.name;
-
-			const c = append(row, $('span'));
-			c.style.cssText = 'color: var(--vscode-descriptionForeground); font-size: 10px;';
-			c.textContent = it.count;
+		if (!hasGeometry) {
+			this.frame.setEmpty({
+				icon: Codicon.package,
+				title: localize('cad.emptyTitle', "No geometry yet"),
+				text: localize('cad.emptyText', "No geometry yet. Import a STEP, IGES or BREP file."),
+				actions: [{
+					label: localize('cad.importAction', "Import CAD..."),
+					primary: true,
+					run: () => this.importCad()
+				}]
+			});
+			this.frame.setStatus({
+				text: localize('cad.emptyStatus', "No geometry imported"),
+				link: { label: localize('cad.importAction', "Import CAD..."), run: () => this.importCad() }
+			});
+			this.propertiesDockService.clearProperties();
+			return;
 		}
 
-		// Topological Naming Queries (TNP Engine)
-		const tnpSec = append(nav, $('.tnp-selectors'));
-		tnpSec.style.cssText = 'border-top: 1px solid var(--vscode-widget-border, #333); padding-top: 16px; display: flex; flex-direction: column; gap: 8px;';
+		this.frame.setEmpty(undefined);
+		const count = bodies.length;
+		const bodyText = count === 1 ? '1 body' : `${count} bodies`;
+		this.frame.setStatus({
+			text: localize('cad.status', "Geometry: {0} ({1})", data?.cadFile ?? 'model', this.currentStatus?.text ?? bodyText)
+		});
 
-		const tnpTitle = append(tnpSec, $('h4'));
-		tnpTitle.style.cssText = 'margin: 0; font-size: 12px; text-transform: uppercase; color: var(--vscode-descriptionForeground);';
-		tnpTitle.textContent = 'Topological Selectors';
+		// Register Bodies Table to bottom Tables Panel
+		this.inputDisposables.add(MAEngineTables.registerTable({
+			id: 'maengine.cad.bodies',
+			label: localize('table.bodies', "Bodies"),
+			getData: () => ({
+				columns: [
+					{ id: 'name', label: localize('col.name', "Name"), sortable: true, getValue: (r: ICadBody) => r.name },
+					{ id: 'material', label: localize('col.material', "Material"), sortable: true, getValue: (r: ICadBody) => r.material ?? 'n/a' },
+					{ id: 'volume', label: localize('col.volume', "Volume (mm³)"), align: 'right', sortable: true, getValue: (r: ICadBody) => r.volume_mm3 ?? 0 }
+				],
+				rows: bodies
+			})
+		}));
 
-		const sel1 = append(tnpSec, $('div.sel-card'));
-		sel1.style.cssText = 'padding: 8px; border-radius: 4px; background: var(--vscode-input-background); border: 1px solid #0984e3; font-size: 11px;';
-		sel1.innerHTML = '<b>fixed_face</b>: bbox [-1, -1, -1, 1, 51, 51]<br><span style="color:#2ecc71">✓ Validated (1 Face)</span>';
+		// Render Bodies View
+		clearNode(this.bodiesContainer);
+		append(this.bodiesContainer, $('.ma-cad-section-title', undefined, localize('cad.bodiesSection', "Bodies in Model")));
 
-		const sel2 = append(tnpSec, $('div.sel-card'));
-		sel2.style.cssText = 'padding: 8px; border-radius: 4px; background: var(--vscode-input-background); border: 1px solid #e67e22; font-size: 11px;';
-		sel2.innerHTML = '<b>loaded_face</b>: bbox [499, -1, -1, 501, 51, 51]<br><span style="color:#2ecc71">✓ Validated (1 Face)</span>';
+		const list = append(this.bodiesContainer, $('.ma-cad-item-list'));
+		for (const body of bodies) {
+			const row = append(list, $('.ma-cad-body-row'));
+			if (this.selectedBodyId === body.id) {
+				row.classList.add('selected');
+			}
+			append(row, $('span.ma-cad-body-name', undefined, body.name));
+			const meta = append(row, $('.ma-cad-body-meta'));
+			if (body.material) {
+				append(meta, $('span.ma-cad-body-mat', undefined, body.material));
+			}
+			if (typeof body.volume_mm3 === 'number') {
+				append(meta, $('span.ma-cad-body-vol', undefined, `${body.volume_mm3.toLocaleString()} mm³`));
+			}
 
-		// Right 3D Viewport
-		const viewport = append(workArea, $('.cad-viewport'));
-		viewport.style.cssText = 'flex: 1; background: #18191c; position: relative; display: flex; align-items: center; justify-content: center;';
+			this.inputDisposables.add(addDisposableListener(row, EventType.CLICK, () => {
+				for (const child of Array.from(list.children)) {
+					child.classList.remove('selected');
+				}
+				row.classList.add('selected');
+				this.selectBody(body);
+			}));
+		}
 
-		// Canvas Viewport Placeholder with Grid & Axes
-		const canvasPlaceholder = append(viewport, $('div.canvas-ui'));
-		canvasPlaceholder.style.cssText = 'text-align: center; color: #666; font-size: 14px;';
-		canvasPlaceholder.innerHTML = `
-			<svg width="240" height="160" viewBox="0 0 240 160" style="margin-bottom: 12px;">
-				<polygon points="40,110 140,50 200,85 100,145" fill="rgba(9, 132, 227, 0.25)" stroke="#0984e3" stroke-width="2"/>
-				<polygon points="40,70 140,10 200,45 100,105" fill="rgba(9, 132, 227, 0.4)" stroke="#0984e3" stroke-width="2"/>
-				<line x1="40" y1="110" x2="40" y2="70" stroke="#0984e3" stroke-width="2"/>
-				<line x1="140" y1="50" x2="140" y2="10" stroke="#0984e3" stroke-width="2"/>
-				<line x1="200" y1="85" x2="200" y2="45" stroke="#0984e3" stroke-width="2"/>
-				<line x1="100" y1="145" x2="100" y2="105" stroke="#0984e3" stroke-width="2"/>
-				<!-- Fixed Base Marker -->
-				<line x1="30" y1="115" x2="30" y2="65" stroke="#e74c3c" stroke-width="4"/>
-				<line x1="30" y1="115" x2="90" y2="150" stroke="#e74c3c" stroke-width="4"/>
-			</svg>
-			<div style="font-weight: 500; color: #aaa;">3D Interactive CAD B-Rep Viewport (OpenCASCADE / Three.js)</div>
-			<div style="font-size: 11px; margin-top: 4px; color: #555;">Rotate: Left Click + Drag | Pan: Right Click + Drag | Zoom: Mouse Wheel</div>
-		`;
+		// Topological Selectors if present
+		if (data?.selectors?.length) {
+			append(this.bodiesContainer, $('.ma-cad-section-title', undefined, localize('cad.selectorsSection', "Topological Selectors")));
+			const selList = append(this.bodiesContainer, $('.ma-cad-item-list'));
+			for (const sel of data.selectors) {
+				const row = append(selList, $('.ma-cad-body-row'));
+				append(row, $('span', undefined, sel.name));
+				const meta = append(row, $('.ma-cad-body-meta'));
+				append(meta, $('span', undefined, sel.type));
+				this.inputDisposables.add(addDisposableListener(row, EventType.CLICK, () => {
+					this.propertiesDockService.setProperties({
+						title: sel.name,
+						detail: sel.type,
+						rows: [
+							{ name: localize('prop.selectorName', "Selector Name"), value: sel.name },
+							{ name: localize('prop.selectorType', "Entity Type"), value: sel.type },
+							{ name: localize('prop.rule', "Selection Rule"), value: sel.rule ?? 'n/a' },
+							{ name: localize('prop.bounds', "Bounding Box"), value: sel.bounds ? `[${sel.bounds.join(', ')}]` : 'n/a' }
+						]
+					});
+				}));
+			}
+		}
 
-		// Axis Triad Widget (Bottom Left)
-		const triad = append(viewport, $('div.cad-triad'));
-		triad.style.cssText = 'position: absolute; bottom: 16px; left: 16px; background: rgba(0,0,0,0.5); border-radius: 6px; padding: 8px 12px; font-size: 11px; font-weight: bold; color: #aaa; display: flex; gap: 8px;';
-		triad.innerHTML = '<span style="color:#e74c3c">X</span> <span style="color:#2ecc71">Y</span> <span style="color:#3498db">Z</span>';
+		// Initial selection
+		if (bodies.length > 0 && !this.selectedBodyId) {
+			this.selectBody(bodies[0]);
+		}
+	}
+
+	private selectBody(body: ICadBody): void {
+		this.selectedBodyId = body.id;
+		this.propertiesDockService.setProperties({
+			title: body.name,
+			detail: body.id,
+			rows: [
+				{ name: localize('prop.bodyId', "Body ID"), value: body.id },
+				{ name: localize('prop.bodyName', "Name"), value: body.name },
+				{ name: localize('prop.material', "Material"), value: body.material ?? localize('prop.na', "n/a") },
+				{ name: localize('prop.volume', "Volume"), value: typeof body.volume_mm3 === 'number' ? `${body.volume_mm3.toLocaleString()} mm³` : localize('prop.na', "n/a") }
+			]
+		});
+	}
+
+	private importCad(): void {
+		this.notificationService.info(localize('cad.importPrompt', "Select a STEP, IGES or BREP file to import."));
+		void this.commandService.executeCommand('workbench.action.files.openFile');
 	}
 
 	override layout(dimension: { width: number; height: number }): void {
-		this.scrollable.getDomNode().style.width = `${dimension.width}px`;
-		this.scrollable.getDomNode().style.height = `${dimension.height}px`;
-		this.scrollable.scanDomNode();
+		this.frame.layout(dimension.width, dimension.height);
 	}
 }
-

@@ -1,0 +1,88 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-material-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-material-editor .ma-mat-content {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--ma-space-4, 16px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-3, 12px);
+}
+
+.maengine-material-editor .ma-mat-grid {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-material-editor .ma-mat-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+	padding: var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	cursor: pointer;
+}
+
+.maengine-material-editor .ma-mat-card:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-material-editor .ma-mat-card.selected {
+	border-color: var(--ma-accent, var(--vscode-focusBorder));
+	background: var(--vscode-list-activeSelectionBackground, rgba(0, 0, 0, 0.06));
+}
+
+.maengine-material-editor .ma-mat-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.maengine-material-editor .ma-mat-card-title {
+	font-size: var(--ma-font-m, 13px);
+	font-weight: 600;
+}
+
+.maengine-material-editor .ma-mat-card-badge {
+	font-size: var(--ma-font-xs, 11px);
+	padding: 1px var(--ma-space-2, 8px);
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+}
+
+.maengine-material-editor .ma-mat-card-props {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--ma-space-3, 12px) var(--ma-space-4, 16px);
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-material-editor .ma-mat-prop-item {
+	display: flex;
+	gap: var(--ma-space-1, 4px);
+}
+
+.maengine-material-editor .ma-mat-prop-value {
+	color: var(--vscode-foreground);
+	font-variant-numeric: tabular-nums;
+}

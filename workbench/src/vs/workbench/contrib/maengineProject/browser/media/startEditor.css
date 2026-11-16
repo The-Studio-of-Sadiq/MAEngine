@@ -1,0 +1,277 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * MAEngine start page: brand header and actions on the left, simulation workflow
+ * and recent projects on the right. Calm, neutral surfaces, one accent.
+ */
+
+.maengine-start {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	background-color: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+	font-size: var(--ma-font-m, 13px);
+}
+
+.maengine-start .shell {
+	box-sizing: border-box;
+	flex: none;
+	width: 100%;
+	display: grid;
+	grid-template-columns: 280px minmax(0, 1fr);
+	gap: 48px;
+	max-width: 1040px;
+	margin: 0 auto;
+	padding: 8vh var(--ma-space-6, 24px) var(--ma-space-6, 24px);
+}
+
+@media (max-width: 800px) {
+	.maengine-start .shell {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--ma-space-6, 24px);
+		padding-top: var(--ma-space-6, 24px);
+	}
+}
+
+/* --- Left column: brand and actions --- */
+
+.maengine-start .brand {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-3, 12px);
+	margin-bottom: 28px;
+}
+
+.maengine-start .brand .mark {
+	width: 56px;
+	height: 38px;
+	flex: none;
+}
+
+.maengine-start .brand .divider {
+	align-self: center;
+	width: 1px;
+	height: 28px;
+	background: var(--ma-brand-grey, rgba(128, 128, 128, 0.4));
+	flex: none;
+}
+
+.maengine-start .brand h1 {
+	margin: 0;
+	font-family: var(--ma-font-brand);
+	font-size: 22px;
+	line-height: 1.1;
+	letter-spacing: -0.01em;
+	color: var(--ma-brand-ink, var(--vscode-foreground));
+}
+
+.maengine-start .brand h1 .brand-prefix {
+	font-weight: 800;
+	font-stretch: 125%;
+}
+
+.maengine-start .brand h1 .brand-suffix {
+	font-weight: 400;
+	font-stretch: 100%;
+}
+
+.maengine-start .brand .subtitle {
+	margin: 3px 0 0;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-family: var(--ma-font-brand);
+	font-size: var(--ma-font-s, 12px);
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+}
+
+.maengine-start .actions {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.maengine-start .action {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	width: 100%;
+	padding: 6px var(--ma-space-2, 8px);
+	margin-left: calc(-1 * var(--ma-space-2, 8px));
+	border: none;
+	border-radius: var(--ma-radius, 4px);
+	background: none;
+	color: var(--vscode-textLink-foreground);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.maengine-start .action:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.maengine-start .action:focus-visible,
+.maengine-start .recent-project:focus-visible,
+.maengine-start .workflow-step:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.maengine-start .action .codicon {
+	font-size: 16px;
+}
+
+/* --- Right column: study workflow and recent projects --- */
+
+.maengine-start .section {
+	margin-bottom: 32px;
+}
+
+.maengine-start h2 {
+	margin: 0 0 var(--ma-space-3, 12px);
+	font-family: var(--ma-font-brand);
+	font-size: var(--ma-font-s, 12px);
+	font-weight: var(--ma-font-brand-heading-weight, 600);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* "How a study works" 6-stage strip */
+.maengine-start .workflow-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 28px;
+}
+
+@media (max-width: 600px) {
+	.maengine-start .workflow-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.maengine-start .workflow-step {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 10px 12px;
+	border: 1px solid var(--ma-border);
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+}
+
+.maengine-start .workflow-step-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.maengine-start .workflow-step-num {
+	font-family: var(--ma-font-brand);
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--vscode-focusBorder);
+	opacity: 0.85;
+}
+
+.maengine-start .workflow-step-title {
+	font-weight: 600;
+	font-size: var(--ma-font-s, 12px);
+	color: var(--vscode-foreground);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.maengine-start .workflow-step-desc {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin: 0;
+}
+
+/* Recent projects */
+.maengine-start .recent {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.maengine-start .recent .empty {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	padding: 6px 0;
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-start .recent-project {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	width: calc(100% + 2 * var(--ma-space-2, 8px));
+	margin-left: calc(-1 * var(--ma-space-2, 8px));
+	padding: 6px var(--ma-space-2, 8px);
+	border: none;
+	border-radius: var(--ma-radius, 4px);
+	background: none;
+	color: var(--vscode-foreground);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.maengine-start .recent-project:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.maengine-start .recent-project .top {
+	display: flex;
+	align-items: baseline;
+	gap: var(--ma-space-3, 12px);
+}
+
+.maengine-start .recent-project .name {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--vscode-textLink-foreground);
+	font-weight: 500;
+}
+
+.maengine-start .recent-project .parent,
+.maengine-start .recent-project .date {
+	flex: none;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-start .recent-project .path {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: 11px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* --- Footer: credits and licence --- */
+
+.maengine-start .credits {
+	flex: none;
+	margin-top: auto;
+	padding: var(--ma-space-6, 24px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	text-align: center;
+}
+
+.maengine-start .credits p {
+	margin: 2px 0;
+}

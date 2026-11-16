@@ -1,0 +1,505 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * The shared MAEngine editor frame (editorFrame.ts): toolbar, content area, properties panel, status line.
+ * Spacing, sizes and colours come from the shared tokens (maengineTokens.css), with fallbacks.
+ */
+
+.maengine-editor-frame {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+	font-size: var(--ma-font-m, 13px);
+	box-sizing: border-box;
+}
+
+/* ── toolbar ─────────────────────────────────────────────────────────────── */
+
+.maengine-editor-frame .ma-frame-toolbar {
+	position: relative;
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	height: var(--ma-toolbar-height, 34px);
+	padding: 0 var(--ma-space-2, 8px) 0 var(--ma-space-3, 12px);
+	border-bottom: 1px solid var(--ma-border, var(--vscode-panel-border));
+	box-sizing: border-box;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.maengine-editor-frame .ma-frame-title,
+.maengine-editor-frame .ma-frame-controls,
+.maengine-editor-frame .ma-frame-end {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.maengine-editor-frame .ma-frame-title {
+	flex-shrink: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.maengine-editor-frame .ma-frame-title-text {
+	font-family: var(--ma-font-brand, inherit);
+	font-weight: var(--ma-font-brand-heading-weight, 600);
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.maengine-editor-frame .ma-frame-controls {
+	flex-shrink: 1;
+	overflow: hidden;
+}
+
+.maengine-editor-frame .ma-frame-help {
+	display: flex;
+	align-items: center;
+	margin-left: calc(-1 * var(--ma-space-1, 4px));
+}
+
+.maengine-editor-frame .ma-frame-help-button {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-editor-frame .ma-frame-help-button:hover {
+	color: var(--vscode-foreground);
+}
+
+.maengine-editor-frame .ma-frame-controls:empty,
+.maengine-editor-frame .ma-frame-help:empty,
+.maengine-editor-frame .ma-frame-end:empty {
+	display: none;
+}
+
+.maengine-editor-frame .ma-frame-spacer {
+	flex: 1;
+	min-width: 0;
+}
+
+.maengine-editor-frame .ma-frame-actions {
+	flex: none;
+	display: flex;
+	align-items: center;
+}
+
+.maengine-editor-frame .ma-frame-actions .action-label.codicon {
+	padding: 4px;
+	border-radius: var(--ma-radius, 4px);
+}
+
+/* progress along the toolbar's bottom edge */
+.maengine-editor-frame .ma-frame-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -1px;
+	height: 2px;
+	pointer-events: none;
+}
+
+/* pill in the toolbar ("Out of date", "Stale") */
+.maengine-editor-frame .ma-frame-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ma-space-1, 4px);
+	padding: 1px var(--ma-space-2, 8px);
+	border-radius: 999px;
+	font-size: var(--ma-font-s, 12px);
+	line-height: 18px;
+	border: 1px solid currentColor;
+	cursor: default;
+	background: transparent;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-family: inherit;
+}
+
+.maengine-editor-frame button.ma-frame-pill {
+	cursor: pointer;
+}
+
+.maengine-editor-frame .ma-frame-pill.warn {
+	color: var(--ma-warn, var(--vscode-editorWarning-foreground));
+}
+
+.maengine-editor-frame .ma-frame-pill.fail {
+	color: var(--ma-fail, var(--vscode-editorError-foreground));
+}
+
+.maengine-editor-frame .ma-frame-pill .codicon {
+	font-size: 12px;
+}
+
+/* small inline icon button */
+.maengine-editor-frame .ma-frame-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: none;
+	border-radius: var(--ma-radius, 4px);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.maengine-editor-frame .ma-frame-icon-button:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-editor-frame .ma-frame-icon-button:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* ── body: main and properties ───────────────────────────────────────────── */
+
+.maengine-editor-frame .ma-frame-body {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+}
+
+.maengine-editor-frame .ma-frame-main {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.maengine-editor-frame .ma-frame-panel {
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	border-left: 1px solid var(--ma-border, var(--vscode-panel-border));
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	box-sizing: border-box;
+}
+
+.maengine-editor-frame .ma-frame-panel.hidden,
+.maengine-editor-frame .ma-frame-panel.hidden ~ .monaco-sash {
+	display: none;
+}
+
+.maengine-editor-frame .ma-frame-panel-header {
+	flex: none;
+	display: flex;
+	align-items: center;
+	height: 30px;
+	padding: 0 var(--ma-space-1, 4px) 0 var(--ma-space-3, 12px);
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-editor-frame .ma-frame-panel-title {
+	flex: 1;
+}
+
+.maengine-editor-frame .ma-frame-panel-close {
+	display: inline-flex;
+	padding: 3px;
+	border: none;
+	border-radius: var(--ma-radius, 4px);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.maengine-editor-frame .ma-frame-panel-close:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-editor-frame .ma-frame-panel-content {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: 0 var(--ma-space-3, 12px) var(--ma-space-3, 12px);
+	line-height: 1.5;
+}
+
+/* property sheet: a heading, then name/value rows */
+.maengine-editor-frame .ma-props-heading,
+.ma-props-heading {
+	margin: var(--ma-space-3, 12px) 0 var(--ma-space-1, 4px);
+	font-weight: 600;
+}
+
+.maengine-editor-frame .ma-props-heading:first-child,
+.ma-props-heading:first-child {
+	margin-top: var(--ma-space-1, 4px);
+}
+
+.maengine-editor-frame .ma-props-heading .ma-props-detail,
+.ma-props-heading .ma-props-detail {
+	margin-left: var(--ma-space-2, 8px);
+	font-weight: normal;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-editor-frame .ma-props-row,
+.ma-props-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: var(--ma-space-3, 12px);
+	padding: 2px 0;
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-editor-frame .ma-props-row > .name,
+.ma-props-row > .name {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	flex-shrink: 0;
+	max-width: 45%;
+	overflow-wrap: break-word;
+}
+
+.maengine-editor-frame .ma-props-row > .value,
+.ma-props-row > .value {
+	min-width: 0;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}
+
+.maengine-editor-frame .ma-props-row > .value.problem,
+.ma-props-row > .value.problem {
+	color: var(--ma-warn, var(--vscode-editorWarning-foreground));
+}
+
+.maengine-editor-frame .ma-props-row > .value.problem > .codicon,
+.ma-props-row > .value.problem > .codicon {
+	margin-right: var(--ma-space-1, 4px);
+	font-size: 12px;
+	vertical-align: -2px;
+}
+
+.maengine-editor-frame .ma-props-note,
+.ma-props-note {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	margin: var(--ma-space-1, 4px) 0;
+}
+
+/* ── segmented control (view switchers: e.g. 3D View | Mesher | Convergence) ─────────── */
+
+.maengine-editor-frame .ma-segmented,
+.ma-segmented {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px;
+	gap: 2px;
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	box-sizing: border-box;
+}
+
+.maengine-editor-frame .ma-segment,
+.ma-segment {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ma-space-1, 4px);
+	height: 22px;
+	padding: 0 var(--ma-space-2, 8px);
+	border: none;
+	border-radius: calc(var(--ma-radius, 4px) - 1px);
+	background: transparent;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.maengine-editor-frame .ma-segment:hover:not(:disabled),
+.ma-segment:hover:not(:disabled) {
+	color: var(--vscode-foreground);
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-editor-frame .ma-segment.active,
+.ma-segment.active {
+	color: var(--vscode-foreground);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	box-shadow: 0 0 0 1px var(--ma-border, var(--vscode-panel-border));
+}
+
+.maengine-editor-frame .ma-segment:disabled,
+.ma-segment:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.maengine-editor-frame .ma-segment:focus-visible,
+.ma-segment:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* ── empty state card ────────────────────────────────────────────────────── */
+
+.maengine-editor-frame .ma-frame-empty {
+	display: none;
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	align-items: center;
+	justify-content: center;
+	padding: var(--ma-space-6, 24px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	text-align: center;
+	box-sizing: border-box;
+}
+
+.maengine-editor-frame .ma-frame-empty.visible {
+	display: flex;
+}
+
+.maengine-editor-frame .ma-frame-empty-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	max-width: 440px;
+}
+
+.maengine-editor-frame .ma-frame-empty-icon {
+	font-size: 24px;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin-bottom: var(--ma-space-1, 4px);
+}
+
+.maengine-editor-frame .ma-frame-empty-title {
+	font-size: var(--ma-font-l, 16px);
+	font-weight: 600;
+}
+
+.maengine-editor-frame .ma-frame-empty-text {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	line-height: 1.5;
+}
+
+.maengine-editor-frame .ma-frame-empty-actions {
+	display: flex;
+	gap: var(--ma-space-2, 8px);
+	margin-top: var(--ma-space-2, 8px);
+}
+
+.maengine-editor-frame .ma-frame-empty-actions .monaco-button {
+	width: auto;
+	padding: 4px 14px;
+}
+
+.maengine-editor-frame .ma-frame-empty-link {
+	margin-top: var(--ma-space-1, 4px);
+	font-size: var(--ma-font-s, 12px);
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+}
+
+.maengine-editor-frame .ma-frame-empty-link:hover {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}
+
+/* ── status line ─────────────────────────────────────────────────────────── */
+
+.maengine-editor-frame .ma-frame-status {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	height: 24px;
+	padding: 0 var(--ma-space-3, 12px);
+	border-top: 1px solid var(--ma-border, var(--vscode-panel-border));
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	white-space: nowrap;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+
+.maengine-editor-frame .ma-frame-status:empty {
+	visibility: hidden;
+}
+
+.maengine-editor-frame .ma-frame-status-text {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.maengine-editor-frame .ma-frame-status-text > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.maengine-editor-frame .ma-frame-status-icon {
+	font-size: 14px;
+}
+
+.maengine-editor-frame .ma-frame-status.warning .ma-frame-status-icon {
+	color: var(--ma-warn, var(--vscode-editorWarning-foreground));
+}
+
+.maengine-editor-frame .ma-frame-status.error .ma-frame-status-icon {
+	color: var(--ma-fail, var(--vscode-editorError-foreground));
+}
+
+.maengine-editor-frame .ma-frame-status-link {
+	flex: none;
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+}
+
+.maengine-editor-frame .ma-frame-status-link:hover {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}
+
+/* ── properties dock view (AuxiliaryBar) ─────────────────────────────────── */
+
+.maengine-properties-dock {
+	height: 100%;
+	overflow: auto;
+	box-sizing: border-box;
+}
+
+.maengine-properties-dock .ma-props-dock-empty {
+	padding: var(--ma-space-3, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	line-height: 1.5;
+}
+
+.maengine-properties-dock .ma-props-dock-content {
+	padding: 0 var(--ma-space-3, 12px) var(--ma-space-3, 12px);
+}
+

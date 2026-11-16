@@ -1,0 +1,117 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-mesh-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-mesh-editor .ma-mesh-content {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--ma-space-4, 16px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-4, 16px);
+	max-width: 640px;
+}
+
+.maengine-mesh-editor .ma-mesh-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+	padding: var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+}
+
+.maengine-mesh-editor .ma-mesh-section-title {
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin: 0;
+}
+
+.maengine-mesh-editor .ma-mesh-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-1, 4px);
+}
+
+.maengine-mesh-editor .ma-mesh-field label {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-mesh-editor .ma-mesh-field select,
+.maengine-mesh-editor .ma-mesh-field input[type="number"],
+.maengine-mesh-editor .ma-mesh-field input[type="text"] {
+	height: 26px;
+	padding: 0 var(--ma-space-2, 8px);
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, var(--ma-border));
+	border-radius: var(--ma-radius, 4px);
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	box-sizing: border-box;
+}
+
+.maengine-mesh-editor .ma-mesh-field-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--ma-space-3, 12px);
+}
+
+.maengine-mesh-editor .ma-mesh-checkbox-row {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	font-size: var(--ma-font-s, 12px);
+	cursor: pointer;
+}
+
+.maengine-mesh-editor .ma-mesh-stats-box {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-mesh-editor .ma-mesh-stat-card {
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.maengine-mesh-editor .ma-mesh-stat-card .label {
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-mesh-editor .ma-mesh-stat-card .val {
+	font-size: var(--ma-font-m, 13px);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.maengine-mesh-editor .ma-mesh-actions-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	margin-top: var(--ma-space-2, 8px);
+}

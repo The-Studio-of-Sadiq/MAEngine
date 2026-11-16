@@ -1,0 +1,235 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * The Tables panel below the editor viewport (tablesView.ts):
+ * Sub-tabs for each table provider, toolbar with search & filters, sortable data grid, calm empty states.
+ */
+
+.maengine-tables-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	font-size: var(--ma-font-m, 13px);
+	box-sizing: border-box;
+}
+
+/* ── sub-tabs row ────────────────────────────────────────────────────────── */
+
+.maengine-tables-view .ma-tables-tabs {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-1, 4px);
+	padding: var(--ma-space-1, 4px) var(--ma-space-3, 12px);
+	border-bottom: 1px solid var(--ma-border, var(--vscode-panel-border));
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+}
+
+.maengine-tables-view .ma-tables-tabs.hidden {
+	display: none;
+}
+
+.maengine-tables-view .ma-tables-tab {
+	height: 24px;
+	padding: 0 var(--ma-space-2, 8px);
+	border: none;
+	border-radius: var(--ma-radius, 4px) var(--ma-radius, 4px) 0 0;
+	background: transparent;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font: inherit;
+	font-size: var(--ma-font-s, 12px);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.maengine-tables-view .ma-tables-tab:hover {
+	color: var(--vscode-foreground);
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-tables-view .ma-tables-tab.checked {
+	color: var(--vscode-foreground);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	box-shadow: inset 0 -2px var(--ma-accent, var(--vscode-focusBorder));
+	font-weight: 600;
+}
+
+.maengine-tables-view .ma-tables-tab:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* ── table toolbar (search, filters, count) ──────────────────────────────── */
+
+.maengine-tables-view .ma-tables-toolbar {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	padding: var(--ma-space-1, 4px) var(--ma-space-3, 12px);
+	border-bottom: 1px solid var(--ma-border, var(--vscode-panel-border));
+	background: var(--ma-surface, var(--vscode-editor-background));
+	min-height: 30px;
+	box-sizing: border-box;
+}
+
+.maengine-tables-view .ma-tables-search-box {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ma-space-1, 4px);
+	background: var(--ma-surface-alt, var(--vscode-input-background));
+	border: 1px solid var(--ma-border, var(--vscode-input-border));
+	border-radius: var(--ma-radius, 4px);
+	padding: 2px 6px;
+	height: 22px;
+	box-sizing: border-box;
+}
+
+.maengine-tables-view .ma-tables-search-box .codicon {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: 12px;
+}
+
+.maengine-tables-view .ma-tables-search-input {
+	border: none;
+	outline: none;
+	background: transparent;
+	color: var(--vscode-input-foreground);
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	width: 140px;
+}
+
+.maengine-tables-view .ma-tables-search-input::placeholder {
+	color: var(--ma-muted, var(--vscode-input-placeholderForeground));
+}
+
+.maengine-tables-view .ma-tables-filter-select {
+	background: var(--ma-surface-alt, var(--vscode-dropdown-background));
+	color: var(--vscode-dropdown-foreground);
+	border: 1px solid var(--ma-border, var(--vscode-dropdown-border));
+	border-radius: var(--ma-radius, 4px);
+	height: 22px;
+	padding: 0 4px;
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	outline: none;
+}
+
+.maengine-tables-view .ma-tables-count {
+	margin-left: auto;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	white-space: nowrap;
+}
+
+/* ── table data grid ─────────────────────────────────────────────────────── */
+
+.maengine-tables-view .ma-tables-body {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+.maengine-tables-view .ma-tables-table {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.maengine-tables-view .ma-tables-table.hidden {
+	display: none;
+}
+
+.maengine-tables-view .ma-tables-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+.maengine-tables-view table.ma-tables-grid {
+	width: 100%;
+	border-collapse: collapse;
+	text-align: left;
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-tables-view table.ma-tables-grid th {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-weight: 600;
+	padding: 6px 10px;
+	border-bottom: 1px solid var(--ma-border, var(--vscode-panel-border));
+	white-space: nowrap;
+	user-select: none;
+	cursor: pointer;
+}
+
+.maengine-tables-view table.ma-tables-grid th:hover {
+	color: var(--vscode-foreground);
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-tables-view table.ma-tables-grid th .sort-icon {
+	margin-left: 4px;
+	font-size: 11px;
+	vertical-align: -1px;
+}
+
+.maengine-tables-view table.ma-tables-grid td {
+	padding: 5px 10px;
+	border-bottom: 1px solid var(--ma-border, rgba(128, 128, 128, 0.15));
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 300px;
+}
+
+.maengine-tables-view table.ma-tables-grid td.align-right,
+.maengine-tables-view table.ma-tables-grid th.align-right {
+	text-align: right;
+}
+
+.maengine-tables-view table.ma-tables-grid td.align-center,
+.maengine-tables-view table.ma-tables-grid th.align-center {
+	text-align: center;
+}
+
+.maengine-tables-view table.ma-tables-grid td.numeric {
+	font-variant-numeric: tabular-nums;
+	font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.maengine-tables-view table.ma-tables-grid tr:hover td {
+	background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.08));
+}
+
+.maengine-tables-view table.ma-tables-grid tr.selected td {
+	background: var(--vscode-list-activeSelectionBackground, rgba(0, 120, 215, 0.2));
+	color: var(--vscode-list-activeSelectionForeground, inherit);
+}
+
+/* ── calm empty states ───────────────────────────────────────────────────── */
+
+.maengine-tables-view .ma-tables-empty {
+	display: none;
+	padding: var(--ma-space-4, 16px) var(--ma-space-3, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	text-align: center;
+	line-height: 1.5;
+}
+
+.maengine-tables-view .ma-tables-empty.visible {
+	display: block;
+}

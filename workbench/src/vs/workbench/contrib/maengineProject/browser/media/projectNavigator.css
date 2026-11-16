@@ -1,0 +1,277 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Status dots, shared between navigator and overview. */
+.monaco-workbench .sa-state-dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	box-sizing: border-box;
+}
+
+.monaco-workbench .sa-state-dot.sa-state-ok { background-color: var(--ma-ok, #2e8540); }
+.monaco-workbench .sa-state-dot.sa-state-info { background-color: var(--ma-info, #1a73c4); }
+.monaco-workbench .sa-state-dot.sa-state-warn { background-color: var(--ma-warn, #c2620e); }
+.monaco-workbench .sa-state-dot.sa-state-fail { background-color: var(--ma-fail, #c62f2f); }
+.monaco-workbench .sa-state-dot.sa-state-idle { border: 1.5px solid var(--ma-idle, #8a9099); }
+
+/* The project navigator view container */
+.maengine-project-navigator {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	box-sizing: border-box;
+	user-select: none;
+}
+
+.maengine-project-navigator .sa-nav-tree {
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
+	overflow: hidden;
+}
+
+/* Headings and sub-sections need no twistie; parts keep one if they have children */
+.maengine-project-navigator .monaco-list-row:has(.sa-nav-group, .sa-nav-section) .monaco-tl-twistie {
+	width: 0;
+	padding-right: 0;
+}
+
+.maengine-project-navigator .monaco-list-row:has(.sa-nav-group) {
+	cursor: default;
+	background: none !important;
+	outline: none !important;
+}
+
+.maengine-project-navigator .sa-nav-group {
+	display: flex;
+	align-items: flex-end;
+	height: 100%;
+	padding: 0 var(--ma-space-3, 12px) 3px;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.maengine-project-navigator .sa-nav-part {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	height: 100%;
+	padding: 0 var(--ma-space-3, 12px) 0 var(--ma-space-2, 8px);
+	border-radius: var(--ma-radius, 4px);
+}
+
+.maengine-project-navigator .sa-nav-number {
+	flex: none;
+	width: 18px;
+	text-align: right;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-variant-numeric: tabular-nums;
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-project-navigator .sa-nav-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: var(--ma-font-m, 13px);
+}
+
+.maengine-project-navigator .sa-nav-part.active .sa-nav-name {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.maengine-project-navigator .sa-nav-state {
+	flex: none;
+	max-width: 48%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-project-navigator .sa-nav-state:empty {
+	display: none;
+}
+
+/* Sub-page sections under parts */
+.maengine-project-navigator .sa-nav-section {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 var(--ma-space-3, 12px) 0 38px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-project-navigator .sa-nav-section.active {
+	color: var(--vscode-foreground);
+	font-weight: 600;
+}
+
+/* File rows in developer mode */
+.maengine-project-navigator .sa-nav-file {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 100%;
+	padding-left: 38px;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+}
+
+.maengine-project-navigator .sa-nav-file-icon {
+	flex: none;
+}
+
+.maengine-project-navigator .sa-nav-file-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Overview row */
+.maengine-project-navigator .sa-nav-overview .sa-nav-number {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.maengine-project-navigator .sa-nav-overview .sa-state-dot.hidden {
+	display: none;
+}
+
+/* Plain status text footer at the bottom */
+.maengine-project-navigator .sa-nav-versions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	box-sizing: border-box;
+	height: 28px;
+	flex: 0 0 28px;
+	padding: 0 var(--ma-space-3, 12px);
+	border-top: 1px solid var(--ma-border);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	user-select: none;
+}
+
+.maengine-project-navigator .sa-nav-versions.hidden {
+	display: none;
+}
+
+.maengine-project-navigator .sa-nav-versions-icon {
+	flex: none;
+	font-size: 14px;
+}
+
+.maengine-project-navigator .sa-nav-versions-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Calm empty state when no project is open */
+.maengine-project-navigator .sa-nav-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 32px var(--ma-space-4, 16px);
+	box-sizing: border-box;
+	text-align: center;
+}
+
+.maengine-project-navigator .sa-nav-empty.hidden {
+	display: none;
+}
+
+.maengine-project-navigator .sa-nav-empty-body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	max-width: 260px;
+}
+
+.maengine-project-navigator .sa-nav-empty-icon {
+	font-size: 32px;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin-bottom: 4px;
+}
+
+.maengine-project-navigator .sa-nav-empty-title {
+	font-size: var(--ma-font-m, 13px);
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.maengine-project-navigator .sa-nav-empty-desc {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	line-height: 1.45;
+}
+
+.maengine-project-navigator .sa-nav-empty-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	margin-top: 8px;
+}
+
+.maengine-project-navigator .sa-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	padding: 0 var(--ma-space-3, 12px);
+	border: none;
+	border-radius: var(--ma-radius, 4px);
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 500;
+	cursor: pointer;
+	box-sizing: border-box;
+	transition: background 0.1s ease;
+}
+
+.maengine-project-navigator .sa-btn:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.maengine-project-navigator .sa-btn-primary {
+	background-color: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+}
+
+.maengine-project-navigator .sa-btn-primary:hover {
+	background-color: var(--vscode-button-hoverBackground);
+}
+
+.maengine-project-navigator .sa-btn-secondary {
+	background-color: var(--vscode-button-secondaryBackground);
+	color: var(--vscode-button-secondaryForeground);
+}
+
+.maengine-project-navigator .sa-btn-secondary:hover {
+	background-color: var(--vscode-button-secondaryHoverBackground);
+}

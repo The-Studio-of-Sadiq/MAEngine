@@ -1,0 +1,107 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-physics-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-physics-editor .ma-physics-content {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--ma-space-4, 16px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-4, 16px);
+	max-width: 720px;
+}
+
+.maengine-physics-editor .ma-physics-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+	padding: var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+}
+
+.maengine-physics-editor .ma-physics-header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.maengine-physics-editor .ma-physics-section-title {
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin: 0;
+}
+
+.maengine-physics-editor .ma-physics-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-1, 4px);
+}
+
+.maengine-physics-editor .ma-physics-item-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	cursor: pointer;
+	font-size: var(--ma-font-m, 13px);
+}
+
+.maengine-physics-editor .ma-physics-item-row:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-physics-editor .ma-physics-item-row.selected {
+	border-color: var(--ma-accent, var(--vscode-focusBorder));
+	background: var(--vscode-list-activeSelectionBackground, rgba(0, 0, 0, 0.06));
+}
+
+.maengine-physics-editor .ma-physics-item-meta {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-3, 12px);
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-physics-editor .ma-physics-remove-btn {
+	background: transparent;
+	border: none;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	cursor: pointer;
+	padding: 2px 4px;
+	border-radius: var(--ma-radius, 4px);
+	display: inline-flex;
+	align-items: center;
+}
+
+.maengine-physics-editor .ma-physics-remove-btn:hover {
+	color: var(--ma-fail, var(--vscode-editorError-foreground));
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-physics-editor .ma-physics-empty-notice {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	padding: var(--ma-space-2, 8px) 0;
+}

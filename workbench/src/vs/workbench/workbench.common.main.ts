@@ -249,9 +249,15 @@ import './contrib/replNotebook/browser/repl.contribution.js';
 import './contrib/testing/browser/testing.contribution.js';
 
 // Mechanical Engineering (MAEngine)
+import './contrib/maengineShell/browser/maengineTheme.contribution.js';
 import './contrib/maengineShell/browser/maengineShell.contribution.js';
+import './contrib/maengineShell/browser/maengineSaveStatus.contribution.js';
 import './contrib/maengineProject/browser/maengineProject.contribution.js';
+import './contrib/maengineProject/browser/propertiesDock.js';
+import './contrib/maengineProject/browser/tablesView.js';
+import './contrib/maengineProject/browser/progressView.js';
 import './contrib/maengineProject/browser/maengineNavigator.contribution.js';
+import './contrib/maengineProject/browser/projectStageBar.js';
 import './contrib/maengineCad/browser/maengineCad.contribution.js';
 import './contrib/maengineMaterial/browser/maengineMaterial.contribution.js';
 import './contrib/maengineMesh/browser/maengineMesh.contribution.js';

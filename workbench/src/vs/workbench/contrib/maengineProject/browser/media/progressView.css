@@ -1,0 +1,171 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * The Progress view (progressView.ts):
+ * MAEngine study workflow stages, execution statuses, and solver progress.
+ */
+
+.maengine-progress-view {
+	height: 100%;
+	width: 100%;
+	overflow-y: auto;
+	box-sizing: border-box;
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	font-size: var(--ma-font-m, 13px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-progress-view .ma-progress-empty {
+	padding: var(--ma-space-4, 16px) var(--ma-space-2, 8px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	text-align: center;
+	line-height: 1.5;
+}
+
+.maengine-progress-view .ma-progress-stages {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-1, 4px);
+}
+
+.maengine-progress-view .ma-progress-stage {
+	display: flex;
+	flex-direction: column;
+	padding: 6px 8px;
+	border-radius: var(--ma-radius, 4px);
+	border-bottom: 1px solid var(--ma-border, rgba(128, 128, 128, 0.15));
+	box-sizing: border-box;
+}
+
+.maengine-progress-view .ma-progress-stage:hover {
+	background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.08));
+}
+
+.maengine-progress-view .ma-progress-stage:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.maengine-progress-view .ma-progress-stage-header {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	min-width: 0;
+}
+
+.maengine-progress-view .ma-progress-icon {
+	flex-shrink: 0;
+	width: 16px;
+	font-size: 14px;
+}
+
+/* Icon colours by status state */
+.maengine-progress-view .ma-stage-done .ma-progress-icon { color: var(--ma-ok, #2e8540); }
+.maengine-progress-view .ma-stage-defaults .ma-progress-icon { color: var(--ma-info, #1a73c4); }
+.maengine-progress-view .ma-stage-inProgress .ma-progress-icon { color: var(--ma-brand-blue, #1A5FB4); }
+.maengine-progress-view .ma-stage-warn .ma-progress-icon,
+.maengine-progress-view .ma-stage-stale .ma-progress-icon { color: var(--ma-warn, #c2620e); }
+.maengine-progress-view .ma-stage-failed .ma-progress-icon,
+.maengine-progress-view .ma-stage-error .ma-progress-icon { color: var(--ma-fail, #c62f2f); }
+.maengine-progress-view .ma-stage-notStarted .ma-progress-icon { color: var(--ma-idle, #8a9099); }
+
+.maengine-progress-view .ma-progress-stage-number {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-variant-numeric: tabular-nums;
+	width: 14px;
+	flex-shrink: 0;
+}
+
+.maengine-progress-view .ma-progress-title {
+	font-weight: 600;
+	font-size: var(--ma-font-s, 12px);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.maengine-progress-view .ma-progress-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+	padding: 1px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	line-height: 16px;
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	border: 1px solid var(--ma-border, rgba(128, 128, 128, 0.2));
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.maengine-progress-view .ma-progress-pill.done {
+	color: var(--ma-ok, #2e8540);
+	border-color: currentColor;
+}
+
+.maengine-progress-view .ma-progress-pill.warn {
+	color: var(--ma-warn, #c2620e);
+	border-color: currentColor;
+}
+
+.maengine-progress-view .ma-progress-pill.fail {
+	color: var(--ma-fail, #c62f2f);
+	border-color: currentColor;
+}
+
+.maengine-progress-view .ma-progress-open-btn {
+	color: var(--vscode-textLink-foreground);
+	font-size: var(--ma-font-s, 12px);
+	cursor: pointer;
+	text-decoration: none;
+	padding: 2px 6px;
+	border-radius: var(--ma-radius, 4px);
+	flex-shrink: 0;
+}
+
+.maengine-progress-view .ma-progress-open-btn:hover {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}
+
+.maengine-progress-view .ma-progress-detail {
+	margin-left: 28px;
+	margin-top: 2px;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: 11px;
+	white-space: pre-wrap;
+}
+
+/* ── summary footer ──────────────────────────────────────────────────────── */
+
+.maengine-progress-view .ma-progress-footer {
+	margin-top: var(--ma-space-3, 12px);
+	padding-top: var(--ma-space-2, 8px);
+	border-top: 1px solid var(--ma-border, var(--vscode-panel-border));
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-progress-view .ma-progress-next-action {
+	color: var(--vscode-textLink-foreground);
+	font-size: var(--ma-font-s, 12px);
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.maengine-progress-view .ma-progress-next-action:hover {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}

@@ -1,0 +1,60 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-results-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-results-editor .ma-results-viewport {
+	flex: 1;
+	min-height: 0;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	overflow: hidden;
+}
+
+.maengine-results-editor .ma-results-canvas-box {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-s, 12px);
+	user-select: none;
+}
+
+.maengine-results-editor .ma-results-canvas-box svg {
+	color: var(--ma-border, var(--vscode-panel-border));
+}
+
+.maengine-results-editor .ma-results-legend {
+	position: absolute;
+	right: var(--ma-space-4, 16px);
+	top: var(--ma-space-4, 16px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-1, 4px);
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	font-size: var(--ma-font-xs, 11px);
+}
+
+.maengine-results-editor .ma-results-legend-bar {
+	width: 16px;
+	height: 120px;
+	background: linear-gradient(to bottom, #c62f2f, #c2620e, #2e8540, #1a73c4);
+	border-radius: 2px;
+}

@@ -1,0 +1,85 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * MAEngine design tokens, shared by every MAEngine surface. Colours come from the active
+ * colour theme (MAEngine Light / MAEngine Dark set the chart colours so they read on both
+ * canvases), so these follow theme switches with no code. Use them as
+ * `var(--ma-space-2)`; never hard-code a colour in MAEngine CSS.
+ */
+.monaco-workbench {
+	/* Spacing scale */
+	--ma-space-1: 4px;
+	--ma-space-2: 8px;
+	--ma-space-3: 12px;
+	--ma-space-4: 16px;
+	--ma-space-6: 24px;
+
+	/* Shape and type */
+	--ma-radius: 4px;
+	--ma-font-s: 12px;
+	--ma-font-m: 13px;
+	--ma-font-l: 16px;
+	--ma-font-xl: 20px;
+	--ma-toolbar-height: 34px;
+
+	/* Surfaces and lines */
+	--ma-border: var(--vscode-panel-border, var(--vscode-widget-border, rgba(128, 128, 128, 0.35)));
+	--ma-muted: var(--vscode-descriptionForeground);
+	--ma-surface: var(--vscode-editor-background);
+	--ma-surface-alt: var(--vscode-sideBar-background, var(--vscode-editor-background));
+	--ma-accent: var(--vscode-focusBorder);
+
+	/* Status dots: pass / defaults to review / near the limit / fail / not run yet */
+	--ma-ok: var(--vscode-charts-green, #2e8540);
+	--ma-info: var(--vscode-charts-blue, #1a73c4);
+	--ma-warn: var(--vscode-charts-orange, #c2620e);
+	--ma-fail: var(--vscode-charts-red, #c62f2f);
+	--ma-idle: color-mix(in srgb, var(--vscode-descriptionForeground, #8a9099) 75%, var(--ma-surface-alt));
+}
+
+/*
+ * The brand: Saira is the typeface (bundled, OFL-1.1):
+ * "MA" is Saira Expanded ExtraBold (800), "Engine" Saira Regular (400).
+ */
+@font-face {
+	font-family: 'Saira';
+	src: url('./fonts/Saira-Variable.ttf') format('truetype');
+	font-weight: 100 900;
+	font-stretch: 50% 125%;
+	font-style: normal;
+	font-display: swap;
+}
+
+.monaco-workbench {
+	--ma-brand-ink: var(--vscode-maengine-brandInk, #0A1F3D);
+	--ma-brand-blue: var(--vscode-maengine-brandBlue, #1A5FB4);
+	--ma-brand-top: var(--vscode-maengine-brandTop, #1C6EC1);
+	--ma-brand-bottom: var(--vscode-maengine-brandBottom, #0B3C84);
+	--ma-brand-grey: var(--vscode-maengine-brandGrey, #939AA3);
+
+	--ma-font-brand: 'Saira', 'Bahnschrift', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+	--ma-font-brand-display-weight: 800;
+	--ma-font-brand-display-stretch: 125%;
+	--ma-font-brand-heading-weight: 600;
+}
+
+/* Brand headings */
+.monaco-workbench :is(.maengine-start, .maengine-overview, .maengine-placeholder) :is(h1, h2),
+.monaco-workbench .ma-props-heading {
+	font-family: var(--ma-font-brand);
+	font-weight: var(--ma-font-brand-heading-weight);
+}
+
+.monaco-workbench .ma-brand-art .ma-brand-ink { fill: var(--ma-brand-ink); }
+.monaco-workbench .ma-brand-art .ma-brand-grey { fill: var(--ma-brand-grey); }
+.monaco-workbench .ma-brand-art .ma-brand-top { stop-color: var(--ma-brand-top); }
+.monaco-workbench .ma-brand-art .ma-brand-bottom { stop-color: var(--ma-brand-bottom); }
+
+/* High contrast themes */
+.monaco-workbench.hc-black,
+.monaco-workbench.hc-light {
+	--ma-border: var(--vscode-contrastBorder);
+}

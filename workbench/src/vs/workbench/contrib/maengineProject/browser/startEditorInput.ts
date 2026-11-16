@@ -38,7 +38,7 @@ export class StartEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('startEditor.name', "MAEngine Home");
+		return localize('startEditor.name', "Start");
 	}
 
 	override getIcon(): ThemeIcon {

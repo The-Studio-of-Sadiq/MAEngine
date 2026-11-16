@@ -19,6 +19,9 @@ import { IKeybindingService } from '../../../../platform/keybinding/common/keybi
 import { IStorageService, StorageScope, StorageTarget, WillSaveStateReason } from '../../../../platform/storage/common/storage.js';
 import { defaultKeybindingLabelStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
+import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { IMAEngineProjectService, PROJECT_PARTS } from '../../../services/maengineProject/common/maengineProject.js';
+import { nextStep, openPart, PartStatusProvider } from '../../../contrib/maengineProject/browser/projectParts.js';
 
 interface WatermarkEntry {
 	readonly id: string;
@@ -53,7 +56,7 @@ const emptyWindowEntries: WatermarkEntry[] = coalesce([
 	...baseEntries,
 	openRecent,
 	...(isMacintosh && !isWeb ? [openFileOrFolder] : [openFile, openFolder]),
-	isMacintosh && !isWeb ? newUntitledFile : undefined, // fill in one more on macOS to get to 5 entries
+	isMacintosh && !isWeb ? newUntitledFile : undefined,
 ]);
 
 const workspaceEntries: WatermarkEntry[] = [
@@ -68,6 +71,41 @@ const otherEntries: WatermarkEntry[] = [
 	openSettings,
 ];
 
+function renderCalmBrandMark(parent: HTMLElement): SVGSVGElement {
+	const svg = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'svg');
+	svg.setAttribute('viewBox', '0 0 64 44');
+	svg.setAttribute('class', 'maengine-watermark-mark');
+	svg.setAttribute('aria-hidden', 'true');
+
+	const topFace = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	topFace.setAttribute('d', 'M32 4 L58 15 L32 26 L6 15 Z');
+	topFace.setAttribute('fill', 'var(--ma-border, currentColor)');
+	topFace.setAttribute('opacity', '0.6');
+	svg.appendChild(topFace);
+
+	const leftFace = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	leftFace.setAttribute('d', 'M6 15 L32 26 L32 40 L6 29 Z');
+	leftFace.setAttribute('fill', 'var(--ma-border, currentColor)');
+	leftFace.setAttribute('opacity', '0.45');
+	svg.appendChild(leftFace);
+
+	const rightFace = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	rightFace.setAttribute('d', 'M32 26 L58 15 L58 29 L32 40 Z');
+	rightFace.setAttribute('fill', 'var(--ma-border, currentColor)');
+	rightFace.setAttribute('opacity', '0.3');
+	svg.appendChild(rightFace);
+
+	const meshLines = parent.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+	meshLines.setAttribute('d', 'M19 9.5 L45 20.5 M45 9.5 L19 20.5 M19 20.5 L19 34.5 M45 20.5 L45 34.5');
+	meshLines.setAttribute('stroke', 'var(--vscode-editor-background, #fff)');
+	meshLines.setAttribute('stroke-width', '1');
+	meshLines.setAttribute('opacity', '0.8');
+	svg.appendChild(meshLines);
+
+	parent.appendChild(svg);
+	return svg;
+}
+
 export class EditorGroupWatermark extends Disposable {
 
 	private static readonly CACHED_WHEN = 'editorGroupWatermark.whenConditions';
@@ -77,12 +115,15 @@ export class EditorGroupWatermark extends Disposable {
 	private readonly cachedWhen: { [when: string]: boolean };
 
 	private readonly shortcuts: HTMLElement;
+	private readonly calmWatermark: HTMLElement;
 	private readonly toolbarContainer: HTMLElement;
 	private readonly transientDisposables = this._register(new DisposableStore());
+	private readonly calmDisposables = this._register(new DisposableStore());
 	private readonly keybindingLabels = this._register(new DisposableStore());
 
 	private enabled = false;
 	private workbenchState: WorkbenchState;
+	private readonly statusProvider: PartStatusProvider;
 
 	constructor(
 		container: HTMLElement,
@@ -92,10 +133,13 @@ export class EditorGroupWatermark extends Disposable {
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IStorageService private readonly storageService: IStorageService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IMAEngineProjectService private readonly projectService: IMAEngineProjectService,
+		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
 
+		this.statusProvider = this._register(this.instantiationService.createInstance(PartStatusProvider));
 		this.cachedWhen = this.storageService.getObject(EditorGroupWatermark.CACHED_WHEN, StorageScope.PROFILE, Object.create(null));
 		this.workbenchState = this.contextService.getWorkbenchState();
 
@@ -103,7 +147,7 @@ export class EditorGroupWatermark extends Disposable {
 			h('.editor-group-watermark-toolbar-container@toolbarContainer'),
 			h('.editor-group-watermark', [
 				h('.watermark-container', [
-					h('.maengine-watermark-hero@heroBanner'),
+					h('.maengine-watermark@calmWatermark'),
 					h('.letterpress'),
 					h('.shortcuts@shortcuts'),
 				])
@@ -112,51 +156,13 @@ export class EditorGroupWatermark extends Disposable {
 
 		append(container, elements.root);
 		this.shortcuts = elements.shortcuts;
+		this.calmWatermark = elements.calmWatermark;
 		this.toolbarContainer = elements.toolbarContainer;
 
-		// Expand watermark container and hide default VS Code letterpress mark
-		const watermarkElem = elements.root.querySelector('.editor-group-watermark') as HTMLElement | null;
-		if (watermarkElem) {
-			watermarkElem.style.maxWidth = '850px';
-			watermarkElem.style.width = '100%';
-		}
 		const letterpress = elements.root.querySelector('.letterpress') as HTMLElement | null;
 		if (letterpress) {
 			letterpress.style.display = 'none';
 		}
-
-		// Render bold HELLO WORLD and MAEngine hero banner in watermark
-		const hero = elements.heroBanner;
-		hero.style.cssText = 'text-align: center; margin-bottom: 24px; padding: 24px 20px; width: 100%; box-sizing: border-box;';
-
-		const heroTitle = append(hero, $('h1'));
-		heroTitle.textContent = 'HELLO WORLD';
-		heroTitle.style.cssText = 'font-size: 64px; font-weight: 900; letter-spacing: 6px; color: #00d2ff; background: linear-gradient(135deg, #00d2ff, #3a7bd5, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 12px 0; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: block; text-align: center; filter: drop-shadow(0 4px 18px rgba(0,210,255,0.4));';
-
-		const heroSub = append(hero, $('p'));
-		heroSub.textContent = 'MAEngine • Mechanical Analysis Engine & Simulation Workbench';
-		heroSub.style.cssText = 'font-size: 15px; font-weight: 600; color: var(--vscode-foreground, #ccc); margin: 0 0 6px 0;';
-
-		const heroTag = append(hero, $('p'));
-		heroTag.textContent = 'CAD Parametrics • Gmsh Conformal Meshing • CalculiX FEA • 3D Stress Viewport';
-		heroTag.style.cssText = 'font-size: 12px; color: var(--vscode-descriptionForeground, #888); margin: 0 0 16px 0;';
-
-		const btnRow = append(hero, $('div'));
-		btnRow.style.cssText = 'display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px;';
-
-		const openBtn = append(btnRow, $('button')) as HTMLButtonElement;
-		openBtn.textContent = '🚀 Open MAEngine Home';
-		openBtn.style.cssText = 'background: var(--vscode-button-background, #0984e3); color: var(--vscode-button-foreground, #fff); border: none; border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;';
-		openBtn.onclick = () => {
-			this.commandService.executeCommand('maengine.project.showStart');
-		};
-
-		const bmBtn = append(btnRow, $('button')) as HTMLButtonElement;
-		bmBtn.textContent = '⚡ Run Cantilever Benchmark';
-		bmBtn.style.cssText = 'background: var(--vscode-button-secondaryBackground, #2d3436); color: var(--vscode-button-secondaryForeground, #fff); border: 1px solid var(--vscode-widget-border, #444); border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;';
-		bmBtn.onclick = () => {
-			this.commandService.executeCommand('maengine.project.loadBenchmark', 'Cantilever Beam Static Stress');
-		};
 
 		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this.toolbarContainer, MenuId.EditorGroupWatermarkToolbar, {
 			hiddenItemStrategy: HiddenItemStrategy.NoHide,
@@ -165,15 +171,14 @@ export class EditorGroupWatermark extends Disposable {
 		}));
 
 		this.registerListeners();
-
 		this.render();
 	}
 
 	private registerListeners(): void {
 		this._register(this.configurationService.onDidChangeConfiguration(e => {
 			if (
-				e.affectsConfiguration(EditorGroupWatermark.SETTINGS_KEY) &&
-				this.enabled !== this.configurationService.getValue<boolean>(EditorGroupWatermark.SETTINGS_KEY)
+				e.affectsConfiguration(EditorGroupWatermark.SETTINGS_KEY) ||
+				e.affectsConfiguration('maengine.developerMode')
 			) {
 				this.render();
 			}
@@ -185,6 +190,9 @@ export class EditorGroupWatermark extends Disposable {
 				this.render();
 			}
 		}));
+
+		this._register(this.projectService.onDidChangeProject(() => this.render()));
+		this._register(this.statusProvider.onDidChange(() => this.render()));
 
 		this._register(this.storageService.onWillSaveState(e => {
 			if (e.reason === WillSaveStateReason.SHUTDOWN) {
@@ -202,6 +210,67 @@ export class EditorGroupWatermark extends Disposable {
 	}
 
 	private render(): void {
+		const isDeveloperMode = this.configurationService.getValue<boolean>('maengine.developerMode') === true;
+
+		if (isDeveloperMode) {
+			this.calmWatermark.style.display = 'none';
+			this.shortcuts.style.display = '';
+			this.renderDeveloperWatermark();
+		} else {
+			this.shortcuts.style.display = 'none';
+			this.calmWatermark.style.display = 'flex';
+			this.renderCalmWatermark();
+		}
+	}
+
+	private renderCalmWatermark(): void {
+		this.calmDisposables.clear();
+		clearNode(this.calmWatermark);
+
+		renderCalmBrandMark(this.calmWatermark);
+
+		const project = this.projectService.project;
+		const text = append(this.calmWatermark, $('p.maengine-watermark-text'));
+
+		const actionRow = append(this.calmWatermark, $('.maengine-watermark-actions'));
+
+		if (!project) {
+			text.textContent = localize('watermark.noProject', "Open or create a project to start.");
+
+			const newBtn = append(actionRow, $<HTMLButtonElement>('button.maengine-watermark-btn.primary', { type: 'button' }, localize('watermark.newProject', "New project")));
+			newBtn.onclick = () => {
+				void this.commandService.executeCommand('maengine.project.showStart');
+			};
+
+			const openBtn = append(actionRow, $<HTMLButtonElement>('button.maengine-watermark-btn', { type: 'button' }, localize('watermark.openProject', "Open project")));
+			openBtn.onclick = () => {
+				void this.commandService.executeCommand('workbench.action.files.openFolder');
+			};
+		} else {
+			text.textContent = localize('watermark.projectOpen', "Pick a part in the Project panel, or press Ctrl+K Ctrl+1");
+
+			const next = nextStep(this.statusProvider.getAllStatuses());
+			if (next) {
+				const nextPart = PROJECT_PARTS.find(p => p.id === next.part);
+				const nextBtn = append(actionRow, $<HTMLButtonElement>('button.maengine-watermark-btn.primary', { type: 'button' }, localize('watermark.openNextStep', "Open next step: {0}", next.label)));
+				nextBtn.onclick = () => {
+					if (nextPart) {
+						void openPart(project, nextPart, { editorService: this.editorService, commandService: this.commandService });
+					}
+				};
+			}
+
+			const settingsPart = PROJECT_PARTS.find(p => p.id === 'settings');
+			if (settingsPart) {
+				const settingsBtn = append(actionRow, $<HTMLButtonElement>('button.maengine-watermark-btn', { type: 'button' }, localize('watermark.openSettingsPart', "Open study settings")));
+				settingsBtn.onclick = () => {
+					void openPart(project, settingsPart, { editorService: this.editorService, commandService: this.commandService });
+				};
+			}
+		}
+	}
+
+	private renderDeveloperWatermark(): void {
 		this.enabled = this.configurationService.getValue<boolean>(EditorGroupWatermark.SETTINGS_KEY);
 
 		clearNode(this.shortcuts);
@@ -249,11 +318,11 @@ export class EditorGroupWatermark extends Disposable {
 		const filteredEntries = entries
 			.filter(entry => {
 				if (this.cachedWhen[entry.id]) {
-					return true; // cached from previous session
+					return true;
 				}
 
 				const contextKey = isWeb ? entry.when?.web : entry.when?.native;
-				return !contextKey /* works without context */ || this.contextKeyService.contextMatchesRules(contextKey);
+				return !contextKey || this.contextKeyService.contextMatchesRules(contextKey);
 			})
 			.filter(entry => !!CommandsRegistry.getCommand(entry.id))
 			.filter(entry => !!this.keybindingService.lookupKeybinding(entry.id));

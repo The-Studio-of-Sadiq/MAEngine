@@ -3,25 +3,53 @@
  *  Licensed under the MIT license.
  *--------------------------------------------------------------------------------------------*/
 
-import { $, append, clearNode } from '../../../../base/browser/dom.js';
-import { DomScrollableElement } from '../../../../base/browser/ui/scrollbar/scrollableElement.js';
+import './media/materialEditor.css';
+import { $, addDisposableListener, append, clearNode, EventType } from '../../../../base/browser/dom.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { ScrollbarVisibility } from '../../../../base/common/scrollable.js';
 import { localize } from '../../../../nls.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
+import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
+import { EditorFrame } from '../../maengineProject/browser/editorFrame.js';
+import { IMAEnginePropertiesDockService } from '../../maengineProject/browser/propertiesDock.js';
+import { MAEngineTables } from '../../maengineProject/browser/tablesView.js';
 import { MaterialEditorInput } from './materialEditorInput.js';
+
+interface IMaterialCard {
+	readonly id: string;
+	readonly name: string;
+	readonly elasticModulus_MPa: number;
+	readonly poissonsRatio: number;
+	readonly density_tonne_mm3: number;
+	readonly yieldStrength_MPa?: number;
+	readonly thermalConductivity_W_mK?: number;
+	readonly expansionCoefficient_perK?: number;
+}
+
+interface IMaterialsData {
+	readonly schema?: number;
+	readonly materials?: readonly IMaterialCard[];
+}
 
 export class MaterialEditor extends EditorPane {
 
-	private container!: HTMLElement;
-	private scrollable!: DomScrollableElement;
+	private frame!: EditorFrame;
+	private viewMode: 'library' | 'assigned' = 'library';
+	private contentContainer!: HTMLElement;
+	private selectedMaterialId: string | undefined;
+
+	private readonly inputDisposables = this._register(new DisposableStore());
+	private currentData: IMaterialsData | undefined;
 
 	constructor(
 		group: IEditorGroup,
@@ -29,149 +57,202 @@ export class MaterialEditor extends EditorPane {
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
 		@IFileService private readonly fileService: IFileService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IMAEnginePropertiesDockService private readonly propertiesDockService: IMAEnginePropertiesDockService,
+		@INotificationService private readonly notificationService: INotificationService,
 	) {
 		super(MaterialEditorInput.EDITOR_ID, group, telemetryService, themeService, storageService);
 	}
 
 	protected createEditor(parent: HTMLElement): void {
-		this.container = $('.maengine-material-editor');
-		this.container.style.cssText = 'height: 100%; width: 100%; overflow: auto; padding: 32px; box-sizing: border-box; background: var(--vscode-editor-background); color: var(--vscode-foreground); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
-		this.scrollable = this._register(new DomScrollableElement(this.container, { horizontal: ScrollbarVisibility.Hidden, vertical: ScrollbarVisibility.Auto }));
-		append(parent, this.scrollable.getDomNode());
+		this.frame = this._register(this.instantiationService.createInstance(EditorFrame, parent, {
+			id: 'maengine.materialEditor',
+			ariaLabel: localize('materialEditor.aria', "Materials"),
+			properties: { title: localize('properties', "Properties") }
+		}));
+		this.frame.element.classList.add('maengine-material-editor');
+		this.frame.setActions([this.frame.togglePropertiesAction]);
+
+		this._register(this.frame.createSegmented(
+			this.frame.titleSlot,
+			[
+				{ id: 'library', label: localize('mat.library', "Library"), icon: Codicon.library },
+				{ id: 'assigned', label: localize('mat.assigned', "Assigned"), icon: Codicon.check }
+			],
+			'library',
+			mode => this.switchView(mode)
+		));
+
+		this.contentContainer = append(this.frame.main, $('.ma-mat-content'));
 	}
 
-	override async setInput(input: MaterialEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+	private switchView(mode: 'library' | 'assigned'): void {
+		this.viewMode = mode;
+		this.render();
+	}
+
+	override async setInput(input: EditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
 		await super.setInput(input, options, context, token);
+		this.inputDisposables.clear();
+
+		const resource = (input as MaterialEditorInput).resource;
+		if (resource) {
+			this.inputDisposables.add(this.fileService.onDidFilesChange(e => {
+				if (e.contains(resource)) {
+					void this.load(resource);
+				}
+			}));
+			await this.load(resource);
+		}
+	}
+
+	override clearInput(): void {
+		this.inputDisposables.clear();
+		this.propertiesDockService.clearProperties();
+		super.clearInput();
+	}
+
+	override dispose(): void {
+		this.propertiesDockService.clearProperties();
+		super.dispose();
+	}
+
+	private async load(resource: any): Promise<void> {
+		try {
+			const content = await this.fileService.readFile(resource);
+			this.currentData = JSON.parse(content.value.toString()) as IMaterialsData;
+		} catch {
+			this.currentData = undefined;
+		}
 		this.render();
 	}
 
 	private render(): void {
-		clearNode(this.container);
+		const data = this.currentData;
+		const materials = data?.materials ?? [];
 
-		const wrapper = append(this.container, $('.mat-wrapper'));
-		wrapper.style.cssText = 'max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;';
+		if (materials.length === 0) {
+			this.frame.setEmpty({
+				icon: Codicon.library,
+				title: localize('mat.emptyTitle', "No materials yet"),
+				text: localize('mat.emptyText', "Add a material from the library to configure study properties."),
+				actions: [{
+					label: localize('mat.addAction', "Add Material..."),
+					primary: true,
+					run: () => this.addMaterial()
+				}]
+			});
+			this.frame.setStatus({
+				text: localize('mat.emptyStatus', "No materials defined"),
+				link: { label: localize('mat.addAction', "Add Material..."), run: () => this.addMaterial() }
+			});
+			this.propertiesDockService.clearProperties();
+			return;
+		}
 
-		// Header
-		const header = append(wrapper, $('.mat-header'));
-		header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--vscode-widget-border, #333); padding-bottom: 16px;';
+		this.frame.setEmpty(undefined);
+		this.frame.setStatus({
+			text: localize('mat.status', "{0} materials defined in study library", materials.length)
+		});
 
-		const titleBlock = append(header, $('div'));
-		const title = append(titleBlock, $('h2'));
-		title.style.cssText = 'margin: 0; font-size: 20px; font-weight: 600;';
-		title.textContent = 'Engineering Material Library';
+		// Register Materials table in bottom Tables Panel
+		this.inputDisposables.add(MAEngineTables.registerTable({
+			id: 'maengine.materials.table',
+			label: localize('table.materials', "Materials"),
+			getData: () => ({
+				columns: [
+					{ id: 'name', label: localize('col.name', "Material Name"), sortable: true, getValue: (m: IMaterialCard) => m.name },
+					{ id: 'e', label: localize('col.e', "E (MPa)"), align: 'right', sortable: true, getValue: (m: IMaterialCard) => m.elasticModulus_MPa },
+					{ id: 'nu', label: localize('col.nu', "Poisson's Ratio"), align: 'right', sortable: true, getValue: (m: IMaterialCard) => m.poissonsRatio },
+					{ id: 'density', label: localize('col.density', "Density (tonne/mm³)"), align: 'right', sortable: true, getValue: (m: IMaterialCard) => m.density_tonne_mm3 },
+					{ id: 'yield', label: localize('col.yield', "Yield Strength (MPa)"), align: 'right', sortable: true, getValue: (m: IMaterialCard) => m.yieldStrength_MPa ?? 'n/a' }
+				],
+				rows: materials
+			})
+		}));
 
-		const sub = append(titleBlock, $('p'));
-		sub.style.cssText = 'margin: 4px 0 0 0; font-size: 13px; color: var(--vscode-descriptionForeground);';
-		sub.textContent = 'Elastic-plastic, thermal, and density property models for CalculiX FEA.';
+		clearNode(this.contentContainer);
 
-		const addBtn = append(header, $('button')) as HTMLButtonElement;
-		addBtn.style.cssText = 'background: var(--vscode-button-background, #0984e3); color: var(--vscode-button-foreground, #fff); border: none; border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;';
-		addBtn.textContent = '+ Add New Material';
-
-		// Materials Grid
-		const grid = append(wrapper, $('.mat-grid'));
-		grid.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 20px;';
-
-		const materials = [
-			{
-				id: 'structural_steel',
-				name: 'Structural Steel (ASTM A36)',
-				category: 'Ferrous Metal',
-				e: '210,000 MPa',
-				nu: '0.30',
-				density: '7.85 × 10⁻⁹ tonne/mm³ (7,850 kg/m³)',
-				yield: '250 MPa',
-				thermalK: '60.5 W/(m·K)',
-				alpha: '1.2 × 10⁻⁵ 1/K',
-				active: true
-			},
-			{
-				id: 'aluminum_6061_t6',
-				name: 'Aluminum 6061-T6',
-				category: 'Non-Ferrous Metal',
-				e: '68,900 MPa',
-				nu: '0.33',
-				density: '2.70 × 10⁻⁹ tonne/mm³ (2,700 kg/m³)',
-				yield: '276 MPa',
-				thermalK: '167.0 W/(m·K)',
-				alpha: '2.3 × 10⁻⁵ 1/K',
-				active: false
-			},
-			{
-				id: 'titanium_ti6al4v',
-				name: 'Titanium Ti-6Al-4V (Grade 5)',
-				category: 'High-Strength Aerospace Alloy',
-				e: '113,800 MPa',
-				nu: '0.342',
-				density: '4.43 × 10⁻⁹ tonne/mm³ (4,430 kg/m³)',
-				yield: '880 MPa',
-				thermalK: '6.7 W/(m·K)',
-				alpha: '8.6 × 10⁻⁶ 1/K',
-				active: false
-			},
-			{
-				id: 'gray_cast_iron',
-				name: 'Gray Cast Iron (ASTM Class 35)',
-				category: 'Cast Iron',
-				e: '100,000 MPa',
-				nu: '0.26',
-				density: '7.20 × 10⁻⁹ tonne/mm³ (7,200 kg/m³)',
-				yield: '240 MPa (Ultimate Tensile)',
-				thermalK: '46.0 W/(m·K)',
-				alpha: '1.1 × 10⁻⁵ 1/K',
-				active: false
+		if (this.viewMode === 'assigned') {
+			const assignedList = materials.filter(m => m.id === 'structural_steel');
+			if (assignedList.length === 0) {
+				const empty = append(this.contentContainer, $('.ma-mat-empty-note', undefined, localize('mat.noAssigned', "No materials assigned to geometry bodies yet.")));
+				empty.style.color = 'var(--ma-muted, var(--vscode-descriptionForeground))';
+				empty.style.fontSize = 'var(--ma-font-s, 12px)';
+				return;
 			}
-		];
+			this.renderCards(assignedList, true);
+		} else {
+			this.renderCards(materials, false);
+		}
 
-		for (const mat of materials) {
-			const card = append(grid, $('.mat-card'));
-			card.style.cssText = `background: var(--vscode-editor-background); border: 1px solid ${mat.active ? '#0984e3' : 'var(--vscode-widget-border, #333)'}; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 14px; position: relative;`;
-
-			if (mat.active) {
-				const badge = append(card, $('span'));
-				badge.style.cssText = 'position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: bold; background: #0984e3; color: #fff; padding: 2px 8px; border-radius: 10px;';
-				badge.textContent = 'ASSIGNED TO CAD';
-			}
-
-			const cardHeader = append(card, $('div'));
-			const cardName = append(cardHeader, $('h3'));
-			cardName.style.cssText = 'margin: 0; font-size: 15px; font-weight: 600;';
-			cardName.textContent = mat.name;
-
-			const cardCat = append(cardHeader, $('span'));
-			cardCat.style.cssText = 'font-size: 11px; color: var(--vscode-descriptionForeground);';
-			cardCat.textContent = mat.category;
-
-			// Properties Table
-			const table = append(card, $('table'));
-			table.style.cssText = 'width: 100%; font-size: 12px; border-collapse: collapse;';
-
-			const rows = [
-				['Young\'s Modulus (E)', mat.e],
-				['Poisson\'s Ratio (ν)', mat.nu],
-				['Mass Density (ρ)', mat.density],
-				['Yield Strength (σy)', mat.yield],
-				['Thermal Conductivity (k)', mat.thermalK],
-				['Thermal Expansion (α)', mat.alpha]
-			];
-
-			for (const [k, v] of rows) {
-				const tr = append(table, $('tr'));
-				tr.style.cssText = 'border-bottom: 1px solid var(--vscode-widget-border, #222); line-height: 24px;';
-				const td1 = append(tr, $('td'));
-				td1.style.cssText = 'color: var(--vscode-descriptionForeground); width: 55%;';
-				td1.textContent = k;
-				const td2 = append(tr, $('td'));
-				td2.style.cssText = 'font-weight: 500; font-family: monospace;';
-				td2.textContent = v;
-			}
+		// Initial selection
+		if (materials.length > 0 && !this.selectedMaterialId) {
+			this.selectMaterial(materials[0]);
 		}
 	}
 
+	private renderCards(materials: readonly IMaterialCard[], isAssignedView: boolean): void {
+		const grid = append(this.contentContainer, $('.ma-mat-grid'));
+
+		for (const mat of materials) {
+			const card = append(grid, $('.ma-mat-card'));
+			if (this.selectedMaterialId === mat.id) {
+				card.classList.add('selected');
+			}
+
+			const header = append(card, $('.ma-mat-card-header'));
+			append(header, $('span.ma-mat-card-title', undefined, mat.name));
+
+			if (mat.id === 'structural_steel' || isAssignedView) {
+				append(header, $('span.ma-mat-card-badge', undefined, localize('mat.assignedBadge', "Assigned to Body")));
+			}
+
+			const props = append(card, $('.ma-mat-card-props'));
+			const addProp = (name: string, val: string) => {
+				const item = append(props, $('.ma-mat-prop-item'));
+				append(item, $('span', undefined, `${name}:`));
+				append(item, $('span.ma-mat-prop-value', undefined, val));
+			};
+
+			addProp("E", `${mat.elasticModulus_MPa.toLocaleString()} MPa`);
+			addProp("ν", String(mat.poissonsRatio));
+			addProp("Density", `${mat.density_tonne_mm3} tonne/mm³`);
+			if (mat.yieldStrength_MPa) {
+				addProp("Yield", `${mat.yieldStrength_MPa} MPa`);
+			}
+
+			this.inputDisposables.add(addDisposableListener(card, EventType.CLICK, () => {
+				for (const child of Array.from(grid.children)) {
+					child.classList.remove('selected');
+				}
+				card.classList.add('selected');
+				this.selectMaterial(mat);
+			}));
+		}
+	}
+
+	private selectMaterial(mat: IMaterialCard): void {
+		this.selectedMaterialId = mat.id;
+		this.propertiesDockService.setProperties({
+			title: mat.name,
+			detail: mat.id,
+			rows: [
+				{ name: localize('prop.modulus', "Young's Modulus (E)"), value: `${mat.elasticModulus_MPa.toLocaleString()} MPa` },
+				{ name: localize('prop.poisson', "Poisson's Ratio (ν)"), value: String(mat.poissonsRatio) },
+				{ name: localize('prop.density', "Density"), value: `${mat.density_tonne_mm3} tonne/mm³` },
+				{ name: localize('prop.yield', "Yield Strength"), value: mat.yieldStrength_MPa ? `${mat.yieldStrength_MPa} MPa` : localize('prop.na', "n/a") },
+				{ name: localize('prop.thermal', "Thermal Conductivity"), value: mat.thermalConductivity_W_mK ? `${mat.thermalConductivity_W_mK} W/(m·K)` : localize('prop.na', "n/a") },
+				{ name: localize('prop.expansion', "Thermal Expansion"), value: mat.expansionCoefficient_perK ? `${mat.expansionCoefficient_perK} 1/K` : localize('prop.na', "n/a") },
+			]
+		});
+	}
+
+	private addMaterial(): void {
+		this.notificationService.info(localize('mat.addInfo', "Material catalog: select a material card from the library."));
+	}
+
 	override layout(dimension: { width: number; height: number }): void {
-		this.scrollable.getDomNode().style.width = `${dimension.width}px`;
-		this.scrollable.getDomNode().style.height = `${dimension.height}px`;
-		this.scrollable.scanDomNode();
+		this.frame.layout(dimension.width, dimension.height);
 	}
 }
-

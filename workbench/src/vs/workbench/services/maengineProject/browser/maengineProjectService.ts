@@ -7,14 +7,16 @@ import { VSBuffer } from '../../../../base/common/buffer.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ResourceSet } from '../../../../base/common/map.js';
-import { basename, joinPath } from '../../../../base/common/resources.js';
+import { joinPath } from '../../../../base/common/resources.js';
 import { URI } from '../../../../base/common/uri.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { FileChangeType, IFileService } from '../../../../platform/files/common/files.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IWorkspaceTrustManagementService } from '../../../../platform/workspace/common/workspaceTrust.js';
+import { IPathService } from '../../../services/path/common/pathService.js';
 import {
 	createManifest,
 	IMechastudioProject,
@@ -37,13 +39,16 @@ export class MAEngineProjectService extends Disposable implements IMAEngineProje
 	readonly onDidChangeProject = this._onDidChangeProject.event;
 
 	private protectedResources: ResourceSet;
+	private projectsRootTrusted = false;
 
 	constructor(
 		@IFileService private readonly fileService: IFileService,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
-		@INotificationService private readonly notificationService: INotificationService,
 		@ILogService private readonly logService: ILogService,
+		@IWorkspaceTrustManagementService private readonly workspaceTrustManagementService: IWorkspaceTrustManagementService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IPathService private readonly pathService: IPathService,
 	) {
 		super();
 		this.protectedResources = new ResourceSet(uri => this.uriIdentityService.extUri.getComparisonKey(uri));
@@ -58,7 +63,28 @@ export class MAEngineProjectService extends Disposable implements IMAEngineProje
 		void this.detect();
 	}
 
+	private async ensureProjectsRootTrusted(): Promise<void> {
+		if (this.projectsRootTrusted) {
+			return;
+		}
+		try {
+			const userHome = await this.pathService.userHome();
+			const projectsRoot = joinPath(userHome, 'Documents', 'MAEngine Projects');
+			if (await this.fileService.exists(projectsRoot)) {
+				await this.workspaceTrustManagementService.setUrisTrust([projectsRoot], true);
+				this.projectsRootTrusted = true;
+				if (this.configurationService.getValue<boolean>('maengine.developerMode')) {
+					console.log(`[maengine-trust] Projects root trusted: ${projectsRoot.fsPath}, isWorkspaceTrusted=${this.workspaceTrustManagementService.isWorkspaceTrusted()}`);
+				}
+			}
+		} catch (error) {
+			this.logService.warn('[MAEngine] Failed to check/trust projects root:', error);
+		}
+	}
+
 	async detect(): Promise<void> {
+		await this.ensureProjectsRootTrusted();
+
 		const folders = this.contextService.getWorkspace().folders;
 		if (folders.length === 0) {
 			this.setProject(undefined);
@@ -68,6 +94,10 @@ export class MAEngineProjectService extends Disposable implements IMAEngineProje
 		const root = folders[0].uri;
 		const project = await this.findProject(root);
 		this.setProject(project);
+
+		if (this.configurationService.getValue<boolean>('maengine.developerMode')) {
+			console.log(`[maengine-trust] Project detected at ${root.fsPath}, isWorkspaceTrusted=${this.workspaceTrustManagementService.isWorkspaceTrusted()}`);
+		}
 	}
 
 	async findProject(folder: URI): Promise<IMechastudioProject | undefined> {
@@ -98,6 +128,9 @@ export class MAEngineProjectService extends Disposable implements IMAEngineProje
 		const sanitizedName = projectName.trim().replace(/[\\/:*?"<>|]/g, '_');
 		const projectDir = joinPath(targetFolder, sanitizedName);
 		await this.fileService.createFolder(projectDir);
+
+		// Automatically mark the created project folder as trusted
+		await this.workspaceTrustManagementService.setUrisTrust([projectDir], true);
 
 		const manifest = createManifest(sanitizedName, unitSystem);
 		const manifestUri = joinPath(projectDir, `${sanitizedName}${PROJECT_MANIFEST_EXTENSION}`);
@@ -156,4 +189,3 @@ export class MAEngineProjectService extends Disposable implements IMAEngineProje
 }
 
 registerSingleton(IMAEngineProjectService, MAEngineProjectService, InstantiationType.Delayed);
-
