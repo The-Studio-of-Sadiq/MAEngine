@@ -74,6 +74,11 @@ def cmd_post(args):
         print(f"    - Max Displ:     {res['max_displacement']:.4f} mm")
 
 
+def cmd_run_project(args):
+    from maengine.project_bridge import run_project
+    sys.exit(run_project(args.study, stage=args.stage))
+
+
 def cmd_view(args):
     target_file = os.path.abspath(args.file)
     if not os.path.exists(target_file):
@@ -226,6 +231,15 @@ def main():
     p_post.add_argument("yaml", help="Path to simulation YAML specification file")
     p_post.add_argument("--output-dir", "-o", default=None, help="Custom output directory")
     p_post.set_defaults(func=cmd_post)
+
+    # Command: run-project (studies created in the MAEngine app: a folder of part JSON files)
+    p_rp = subparsers.add_parser("run-project", help="Run a study folder created in the MAEngine app")
+    p_rp.add_argument("study", help="Path to the study folder (contains '02 Geometry', '05 Physics & BCs', ...)")
+    p_rp.add_argument(
+        "--stage", choices=["inspect", "check", "mesh", "solve", "run"], default="run",
+        help="check: validate only; mesh: mesh only; solve: reuse a current mesh, then solve; run: re-mesh and solve",
+    )
+    p_rp.set_defaults(func=cmd_run_project)
 
     # Command: view
     p_view = subparsers.add_parser("view", help="Inspect and display metadata of 3D simulation assets")

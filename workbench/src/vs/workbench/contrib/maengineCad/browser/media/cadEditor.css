@@ -67,6 +67,23 @@
 	gap: var(--ma-space-3, 12px);
 }
 
+.maengine-cad-editor .ma-cad-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+	padding: var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+}
+
+.maengine-cad-editor .ma-cad-header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--ma-space-2, 8px);
+}
+
 .maengine-cad-editor .ma-cad-section-title {
 	font-size: var(--ma-font-s, 12px);
 	font-weight: 600;
@@ -74,6 +91,17 @@
 	letter-spacing: 0.04em;
 	color: var(--ma-muted, var(--vscode-descriptionForeground));
 	margin: 0;
+}
+
+.maengine-cad-editor .ma-cad-model-body {
+	font-size: var(--ma-font-m, 13px);
+	color: var(--vscode-foreground);
+}
+
+.maengine-cad-editor .ma-cad-empty-notice {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	padding: var(--ma-space-1, 4px) 0;
 }
 
 .maengine-cad-editor .ma-cad-item-list {
@@ -109,4 +137,131 @@
 	gap: var(--ma-space-3, 12px);
 	font-size: var(--ma-font-s, 12px);
 	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-cad-editor .ma-cad-selector-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--ma-space-2, 8px);
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	font-size: var(--ma-font-m, 13px);
+}
+
+.maengine-cad-editor .ma-cad-selector-row input {
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: var(--ma-radius, 2px);
+	padding: 2px 6px;
+	font-size: var(--ma-font-s, 12px);
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.maengine-cad-editor .ma-cad-selector-row input:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	border-color: var(--vscode-focusBorder);
+}
+
+.maengine-cad-editor .ma-cad-selector-name-input {
+	width: 120px;
+	min-width: 90px;
+}
+
+.maengine-cad-editor .ma-cad-coord-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.maengine-cad-editor .ma-cad-coord-field {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-cad-editor .ma-cad-number-input {
+	width: 64px;
+}
+
+.maengine-cad-editor .ma-cad-selector-status {
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	white-space: nowrap;
+}
+
+.maengine-cad-editor .ma-cad-selector-status.warning {
+	color: var(--vscode-editorWarning-foreground);
+}
+
+.maengine-cad-editor .ma-cad-selector-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+}
+
+.maengine-cad-editor .ma-cad-selector-error {
+	width: 100%;
+	color: var(--vscode-errorForeground);
+	font-size: var(--ma-font-xs, 11px);
+	padding-top: 2px;
+}
+
+.maengine-cad-editor .ma-cad-remove-btn {
+	background: transparent;
+	border: none;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	cursor: pointer;
+	padding: 2px 4px;
+	border-radius: var(--ma-radius, 4px);
+	display: inline-flex;
+	align-items: center;
+}
+
+.maengine-cad-editor .ma-cad-remove-btn:hover {
+	color: var(--ma-fail, var(--vscode-editorError-foreground));
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-cad-editor .ma-cad-face-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	font-size: var(--ma-font-m, 13px);
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-cad-editor .ma-cad-face-info {
+	display: flex;
+	align-items: center;
+	gap: var(--ma-space-3, 12px);
+	flex-wrap: wrap;
+}
+
+.maengine-cad-editor .ma-cad-face-tag {
+	font-weight: 600;
+}
+
+.maengine-cad-editor .ma-cad-face-bounds {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-family: var(--monaco-monospace-font, monospace);
+	font-size: var(--ma-font-xs, 11px);
+}
+
+.maengine-cad-editor .ma-cad-face-used-by {
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	font-size: var(--ma-font-xs, 11px);
+	font-style: italic;
 }

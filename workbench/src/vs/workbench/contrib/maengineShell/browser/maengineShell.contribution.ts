@@ -99,6 +99,10 @@ const SHELL_DEFAULTS: IConfigurationDefaults = {
 		'workbench.welcomePage.experimentalOnboarding': false,
 		'workbench.startupEditor': 'none',
 		'workbench.editor.tabSizing': 'shrink',
+		// The packaged node-pty was built with an absolute path to a conpty.dll that is not
+		// shipped, so the default (true) makes every terminal fail to launch. Windows' own
+		// ConPTY works, and engine runs (mesh/solve) go through the terminal.
+		'terminal.integrated.windowsUseConptyDll': false,
 	},
 	source: { id: 'maengine.shell', displayName: 'MAEngine' },
 };

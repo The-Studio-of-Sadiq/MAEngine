@@ -29,7 +29,7 @@ import { IEditorGroup } from '../../../services/editor/common/editorGroupsServic
 import { EditorFrame } from '../../maengineProject/browser/editorFrame.js';
 import { IMAEnginePropertiesDockService } from '../../maengineProject/browser/propertiesDock.js';
 import { MAEngineTables } from '../../maengineProject/browser/tablesView.js';
-import { IPartStatus, resolvePartStatus, workspaceHasSimulationYaml } from '../../maengineProject/browser/projectParts.js';
+import { IPartStatus, IRunTarget, resolvePartStatus, resolveRunTarget } from '../../maengineProject/browser/projectParts.js';
 import { IMAEngineProjectService } from '../../../services/maengineProject/common/maengineProject.js';
 import { MeshEditorInput } from './meshEditorInput.js';
 
@@ -52,6 +52,9 @@ interface IMeshData {
 	conformalInterface?: boolean;
 	status?: string;
 	stats?: IMeshStats;
+	/** Written by the engine after meshing (real Gmsh counts). */
+	nodeCount?: number;
+	elementCount?: number;
 }
 
 export class MeshEditor extends EditorPane {
@@ -61,7 +64,7 @@ export class MeshEditor extends EditorPane {
 	private currentData: IMeshData | undefined;
 	private currentResource: any;
 	private currentStatus: IPartStatus | undefined;
-	private hasSimulationYaml = false;
+	private runTarget: IRunTarget | undefined;
 	private generateAction!: Action;
 
 	private readonly inputDisposables = this._register(new DisposableStore());
@@ -113,7 +116,9 @@ export class MeshEditor extends EditorPane {
 		if (resource) {
 			const folder = dirname(resource);
 			this.inputDisposables.add(this.fileService.onDidFilesChange(e => {
-				if (e.contains(resource) || e.affects(folder)) {
+				// Readiness depends on the other parts too (CAD import, materials).
+				const root = this.projectService.project?.root;
+				if (e.contains(resource) || e.affects(folder) || (root && e.affects(root))) {
 					void this.load(resource);
 				}
 			}));
@@ -143,7 +148,7 @@ export class MeshEditor extends EditorPane {
 			this.currentData = undefined;
 		}
 		this.currentStatus = await resolvePartStatus('mesh', this.fileService, this.projectService, this.currentData, resource);
-		this.hasSimulationYaml = await workspaceHasSimulationYaml(this.fileService, this.contextService, this.projectService);
+		this.runTarget = await resolveRunTarget('mesh', this.fileService, this.contextService, this.projectService);
 		this.render();
 	}
 
@@ -152,13 +157,16 @@ export class MeshEditor extends EditorPane {
 		const hasMesh = this.currentStatus?.state === 'done';
 
 		// Keep button enabled only when running is possible
-		this.generateAction.enabled = this.hasSimulationYaml;
+		const canRun = !!this.runTarget?.canRun;
+		this.generateAction.enabled = canRun;
+		const nodes = data.nodeCount ?? data.stats?.nodes;
+		const elements = data.elementCount ?? data.stats?.elements;
 
 		// Bottom Hint Strip
 		if (!hasMesh) {
-			if (!this.hasSimulationYaml) {
+			if (!canRun) {
 				this.frame.setStatus({
-					text: localize('mesh.notConnectedHint', "Run isn't connected for this study yet")
+					text: localize('mesh.cannotRunHint', "Can't mesh yet: {0}", this.runTarget?.reason ?? localize('mesh.noRunTarget', "no study is open"))
 				});
 			} else {
 				this.frame.setStatus({
@@ -168,15 +176,23 @@ export class MeshEditor extends EditorPane {
 			}
 		} else {
 			this.frame.setStatus({
-				text: localize('mesh.doneHint', "Mesh generated: {0} nodes, {1} elements", (data.stats?.nodes ?? 0).toLocaleString(), (data.stats?.elements ?? 0).toLocaleString())
+				text: typeof nodes === 'number' && typeof elements === 'number'
+					? localize('mesh.doneHint', "Mesh generated: {0} nodes, {1} elements", nodes.toLocaleString(), elements.toLocaleString())
+					: localize('mesh.doneHintNoCounts', "Mesh generated")
 			});
 		}
 
 		// Register Mesh quality table to Tables panel
-		const qualityRows = hasMesh ? [
-			{ metric: 'Min Jacobian', value: data.stats?.qualityMinJacobian ?? '0.84', target: '> 0.20', status: 'Passed' },
-			{ metric: 'Avg Jacobian', value: data.stats?.qualityAvgJacobian ?? '0.96', target: '> 0.70', status: 'Passed' }
-		] : [];
+		// Only quality values the mesher actually reported; nothing is shown otherwise.
+		const qualityRows: { metric: string; value: number; target: string; status: string }[] = [];
+		if (hasMesh && typeof data.stats?.qualityMinJacobian === 'number') {
+			const v = data.stats.qualityMinJacobian;
+			qualityRows.push({ metric: 'Min Jacobian', value: v, target: '> 0.20', status: v > 0.2 ? 'Passed' : 'Failed' });
+		}
+		if (hasMesh && typeof data.stats?.qualityAvgJacobian === 'number') {
+			const v = data.stats.qualityAvgJacobian;
+			qualityRows.push({ metric: 'Avg Jacobian', value: v, target: '> 0.70', status: v > 0.7 ? 'Passed' : 'Failed' });
+		}
 
 		this.inputDisposables.add(MAEngineTables.registerTable({
 			id: 'maengine.mesh.quality',
@@ -207,8 +223,8 @@ export class MeshEditor extends EditorPane {
 			append(c, $('span.val', undefined, val));
 		};
 
-		addStat(localize('mesh.statNodes', "Nodes"), hasMesh ? (data.stats?.nodes ?? 0).toLocaleString() : localize('val.na', "n/a"));
-		addStat(localize('mesh.statElements', "Elements"), hasMesh ? (data.stats?.elements ?? 0).toLocaleString() : localize('val.na', "n/a"));
+		addStat(localize('mesh.statNodes', "Nodes"), hasMesh && typeof nodes === 'number' ? nodes.toLocaleString() : localize('val.na', "n/a"));
+		addStat(localize('mesh.statElements', "Elements"), hasMesh && typeof elements === 'number' ? elements.toLocaleString() : localize('val.na', "n/a"));
 		addStat(localize('mesh.statElementType', "Element Type"), data.elementType ?? "TET10");
 
 		// Sizing & Formulation Form Section

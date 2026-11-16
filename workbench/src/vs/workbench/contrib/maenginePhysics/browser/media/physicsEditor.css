@@ -58,7 +58,8 @@
 .maengine-physics-editor .ma-physics-item-row {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 6px;
 	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
 	border: 1px solid var(--ma-border, var(--vscode-panel-border));
 	border-radius: var(--ma-radius, 4px);
@@ -85,6 +86,7 @@
 }
 
 .maengine-physics-editor .ma-physics-remove-btn {
+	margin-left: auto;
 	background: transparent;
 	border: none;
 	color: var(--ma-muted, var(--vscode-descriptionForeground));
@@ -104,4 +106,82 @@
 	font-size: var(--ma-font-s, 12px);
 	color: var(--ma-muted, var(--vscode-descriptionForeground));
 	padding: var(--ma-space-2, 8px) 0;
+}
+
+.maengine-physics-editor input,
+.maengine-physics-editor select {
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: var(--ma-radius, 2px);
+	padding: 2px 6px;
+	font-size: var(--ma-font-s, 12px);
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.maengine-physics-editor input:focus,
+.maengine-physics-editor select:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	border-color: var(--vscode-focusBorder);
+}
+
+.maengine-physics-editor input[type="number"],
+.maengine-physics-editor .ma-physics-number-input {
+	width: 70px;
+}
+
+.maengine-physics-editor input.error {
+	border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground)) !important;
+}
+
+.maengine-physics-editor .ma-physics-row-id {
+	font-weight: 600;
+	font-size: var(--ma-font-s, 12px);
+	min-width: 48px;
+}
+
+.maengine-physics-editor .ma-physics-field-label,
+.maengine-physics-editor .ma-physics-unit,
+.maengine-physics-editor .ma-physics-hint {
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-physics-editor .ma-physics-inline-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.maengine-physics-editor .ma-physics-row-status {
+	font-size: var(--ma-font-xs, 11px);
+	display: inline-flex;
+	align-items: center;
+	margin-left: 4px;
+}
+
+.maengine-physics-editor .ma-physics-row-status.ma-physics-row-warning {
+	color: var(--vscode-editorWarning-foreground);
+}
+
+.maengine-physics-editor .ma-physics-row-status.ma-physics-row-error {
+	color: var(--vscode-inputValidation-errorForeground, var(--vscode-editorError-foreground));
+}
+
+.maengine-physics-editor .ma-physics-btn-secondary {
+	padding: 2px 8px;
+	font-size: var(--ma-font-xs, 11px);
+}
+
+.maengine-physics-editor .ma-physics-gravity-mag {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	margin-left: 4px;
+}
+
+.maengine-physics-editor .ma-physics-no-selectors-notice {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--vscode-editorWarning-foreground, var(--ma-muted, var(--vscode-descriptionForeground)));
+	padding: 2px 0;
 }

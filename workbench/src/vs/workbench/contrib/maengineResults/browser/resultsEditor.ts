@@ -32,6 +32,14 @@ interface IResultsSummary {
 	readonly maxVonMises_MPa?: number | null;
 	readonly maxDisplacement_mm?: number | null;
 	readonly minSafetyFactor?: number | null;
+	readonly minVonMises_MPa?: number | null;
+	readonly minDisplacement_mm?: number | null;
+	/** Summed nodal reaction force per support selector, [Fx, Fy, Fz] in N (read from the .frd). */
+	readonly reactionForces_N?: { readonly [selector: string]: readonly number[] } | null;
+}
+
+function formatValue(value: number | null | undefined, unit: string): string | undefined {
+	return typeof value === 'number' && isFinite(value) ? `${Number(value.toPrecision(5))} ${unit}`.trim() : undefined;
 }
 
 interface IResultRow {
@@ -180,9 +188,14 @@ export class ResultsEditor extends EditorPane {
 		});
 
 		const summary = data?.summary;
-		const vonMises = summary?.maxVonMises_MPa ? `${summary.maxVonMises_MPa} MPa` : localize('val.na', "n/a");
-		const disp = summary?.maxDisplacement_mm ? `${summary.maxDisplacement_mm} mm` : localize('val.na', "n/a");
-		const fos = summary?.minSafetyFactor ? String(summary.minSafetyFactor) : localize('val.na', "n/a");
+		const na = localize('val.na', "n/a");
+		const vonMises = formatValue(summary?.maxVonMises_MPa, 'MPa') ?? na;
+		const disp = formatValue(summary?.maxDisplacement_mm, 'mm') ?? na;
+		const fos = formatValue(summary?.minSafetyFactor, '') ?? na;
+		const reactionRows = Object.entries(summary?.reactionForces_N ?? {}).map(([selector, f]) => ({
+			name: localize('prop.reaction', "Reaction on {0}", selector),
+			value: `[${f.map(v => Number(v.toPrecision(5))).join(', ')}] N`
+		}));
 
 		// Publish summary to Properties dock
 		this.propertiesDockService.setProperties({
@@ -190,14 +203,15 @@ export class ResultsEditor extends EditorPane {
 			rows: [
 				{ name: localize('prop.vonMises', "Max von Mises Stress"), value: vonMises },
 				{ name: localize('prop.disp', "Max Displacement"), value: disp },
-				{ name: localize('prop.fos', "Min Factor of Safety"), value: fos }
+				{ name: localize('prop.fos', "Min Factor of Safety"), value: fos },
+				...reactionRows
 			]
 		});
 
 		// Register Results Table
 		const resultRows = [
-			{ field: 'Von Mises Stress', max: vonMises, min: '0.0 MPa', unit: 'MPa' },
-			{ field: 'Displacement Magnitude', max: disp, min: '0.0 mm', unit: 'mm' }
+			{ field: 'Von Mises Stress', max: vonMises, min: formatValue(summary?.minVonMises_MPa, 'MPa') ?? na, unit: 'MPa' },
+			{ field: 'Displacement Magnitude', max: disp, min: formatValue(summary?.minDisplacement_mm, 'mm') ?? na, unit: 'mm' }
 		];
 
 		this.inputDisposables.add(MAEngineTables.registerTable<IResultRow>({

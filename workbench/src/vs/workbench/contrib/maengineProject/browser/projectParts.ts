@@ -384,9 +384,12 @@ export async function derivePartStatus(
 			if (cadExists) {
 				const bodies = data.bodies;
 				const count = Array.isArray(bodies) ? bodies.length : 0;
-				const text = count === 1
-					? localize('partStatus.oneBody', "1 body")
-					: localize('partStatus.nBodies', "{0} bodies", count);
+				// Bodies are listed by the engine on the first mesh run; until then just say imported.
+				const text = count === 0
+					? localize('partStatus.imported', "imported")
+					: count === 1
+						? localize('partStatus.oneBody', "1 body")
+						: localize('partStatus.nBodies', "{0} bodies", count);
 				return { part: part.id, state: 'done', text };
 			}
 			return { part: part.id, state: 'notStarted', text: localize('partStatus.notImported', "not imported") };
@@ -459,6 +462,17 @@ export async function derivePartStatus(
 			const bcs = Array.isArray(data.constraints) ? data.constraints.length : 0;
 			const lds = Array.isArray(data.loads) ? data.loads.length : 0;
 			if (bcs > 0 || lds > 0) {
+				const geometryPart = PROJECT_PARTS.find(p => p.id === 'geometry')!;
+				const geometry = await readJson(fileService, joinPath(project.root, geometryPart.folder, geometryPart.mainFile));
+				const problems = physicsProblems(data, selectorNamesOf(geometry));
+				if (problems.length > 0) {
+					return {
+						part: part.id,
+						state: 'warn',
+						text: localize('partStatus.needsAttention', "needs attention"),
+						hint: problems.join('; '),
+					};
+				}
 				const bcText = `${bcs} BC${bcs === 1 ? '' : 's'}`;
 				const loadText = `${lds} load${lds === 1 ? '' : 's'}`;
 				return { part: part.id, state: 'done', text: `${bcText}, ${loadText}` };
@@ -740,6 +754,159 @@ export async function workspaceHasSimulationYaml(
 		} catch { }
 	}
 	return false;
+}
+
+export type RunStage = 'mesh' | 'solve';
+
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+/**
+ * Problems that stop the engine from running the study's physics, mirroring the checks in
+ * `maengine/project_bridge.py` (load_study). Empty when the physics can run.
+ */
+export function physicsProblems(physics: any, selectorNames: readonly string[]): string[] {
+	const problems: string[] = [];
+	const names = new Set(selectorNames);
+	const checkSelector = (kind: string, id: string, selector: unknown) => {
+		if (typeof selector !== 'string' || !selector) {
+			problems.push(localize('physics.problem.noSelector', "{0} '{1}' has no selector", kind, id));
+		} else if (!names.has(selector)) {
+			problems.push(localize('physics.problem.missingSelector', "selector '{0}' is not defined in Geometry", selector));
+		}
+	};
+	const constraints: any[] = Array.isArray(physics?.constraints) ? physics.constraints : [];
+	const loads: any[] = Array.isArray(physics?.loads) ? physics.loads : [];
+	if (constraints.length === 0) {
+		problems.push(localize('physics.problem.noSupport', "no support is defined"));
+	}
+	constraints.forEach((c, i) => {
+		const id = String(c?.id ?? `bc_${i + 1}`);
+		if (c?.type === 'fixed') {
+			checkSelector(localize('physics.constraint', "constraint"), id, c.selector);
+		} else if (c?.type === 'displacement') {
+			checkSelector(localize('physics.constraint', "constraint"), id, c.selector);
+			if (![c.ux, c.uy, c.uz].some(isNum)) {
+				problems.push(localize('physics.problem.noDisp', "constraint '{0}' sets no displacement component", id));
+			}
+		} else {
+			problems.push(localize('physics.problem.constraintType', "constraint '{0}' has an unsupported type", id));
+		}
+	});
+	loads.forEach((l, i) => {
+		const id = String(l?.id ?? `load_${i + 1}`);
+		if (l?.type === 'force') {
+			checkSelector(localize('physics.load', "load"), id, l.selector);
+			const v = l.vector;
+			if (!Array.isArray(v) || v.length !== 3 || !v.every(isNum)) {
+				problems.push(localize('physics.problem.forceVector', "load '{0}' needs a force vector", id));
+			} else if (v.every((x: number) => x === 0)) {
+				problems.push(localize('physics.problem.zeroForce', "load '{0}' is a zero force", id));
+			}
+		} else if (l?.type === 'pressure') {
+			checkSelector(localize('physics.load', "load"), id, l.selector);
+			if (!isNum(l.magnitude)) {
+				problems.push(localize('physics.problem.pressure', "load '{0}' needs a pressure in MPa", id));
+			} else if (l.magnitude === 0) {
+				problems.push(localize('physics.problem.zeroPressure', "load '{0}' is a zero pressure", id));
+			}
+		} else {
+			problems.push(localize('physics.problem.loadType', "load '{0}' has an unsupported type", id));
+		}
+	});
+	const g = physics?.gravity;
+	if (g !== null && g !== undefined && !(Array.isArray(g) && g.length === 3 && g.every(isNum))) {
+		problems.push(localize('physics.problem.gravity', "gravity must be [gx, gy, gz] in mm/s² or None"));
+	}
+	return [...new Set(problems)];
+}
+
+export function selectorNamesOf(geometry: any): string[] {
+	return (Array.isArray(geometry?.selectors) ? geometry.selectors : [])
+		.map((s: any) => s?.name)
+		.filter((n: unknown): n is string => typeof n === 'string');
+}
+
+export interface IRunTarget {
+	/** 'spec': the folder has a simulation.yaml; 'study': a study run by `maengine run-project`. */
+	readonly kind: 'spec' | 'study' | 'none';
+	readonly canRun: boolean;
+	/** simulation.yaml for 'spec', the study root folder for 'study'. */
+	readonly target?: URI;
+	/** Why the study cannot run yet (shown in place of the run button). */
+	readonly reason?: string;
+}
+
+async function readJson(fileService: IFileService, uri: URI): Promise<any> {
+	try {
+		return JSON.parse((await fileService.readFile(uri)).value.toString());
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * Decides whether mesh/solve can really run for the open folder, mirroring the checks the
+ * engine's `run-project` makes first. The engine still validates everything and reports
+ * precise errors; this only keeps buttons disabled when a run is certain to fail.
+ */
+export async function resolveRunTarget(
+	stage: RunStage,
+	fileService: IFileService,
+	contextService: IWorkspaceContextService,
+	projectService: IMAEngineProjectService
+): Promise<IRunTarget> {
+	const project = projectService.project;
+	const roots = [project?.root, contextService.getWorkspace().folders[0]?.uri].filter((u): u is URI => !!u);
+	for (const root of roots) {
+		const yaml = joinPath(root, 'simulation.yaml');
+		try {
+			if (await fileService.exists(yaml)) {
+				return { kind: 'spec', canRun: true, target: yaml };
+			}
+		} catch { }
+	}
+	if (!project) {
+		return { kind: 'none', canRun: false, reason: localize('run.noStudy', "Open a study to run it") };
+	}
+
+	const root = project.root;
+	const part = (id: string) => PROJECT_PARTS.find(p => p.id === id)!;
+	const fail = (reason: string): IRunTarget => ({ kind: 'study', canRun: false, target: root, reason });
+
+	const settings = await readJson(fileService, joinPath(root, part('settings').folder, part('settings').mainFile));
+	const units = settings?.project?.unitSystem ?? 'mm_N_MPa_tonne_s';
+	if (units !== 'mm_N_MPa_tonne_s') {
+		return fail(localize('run.units', "Only mm-N-MPa studies can run (Study Settings)"));
+	}
+
+	const geometry = await readJson(fileService, joinPath(root, part('geometry').folder, part('geometry').mainFile));
+	const cadFile = geometry?.cadFile;
+	let cadExists = false;
+	if (typeof cadFile === 'string' && cadFile.trim()) {
+		cadExists = await fileService.exists(joinPath(root, part('geometry').folder, cadFile)) || await fileService.exists(joinPath(root, cadFile));
+	}
+	if (!cadExists) {
+		return fail(localize('run.noCad', "Import a CAD file in Geometry first"));
+	}
+
+	const materials = await readJson(fileService, joinPath(root, part('materials').folder, part('materials').mainFile));
+	if (!Array.isArray(materials?.materials) || materials.materials.length === 0) {
+		return fail(localize('run.noMaterial', "Add a material card in Materials first"));
+	}
+
+	if (stage === 'solve') {
+		const physics = await readJson(fileService, joinPath(root, part('physics').folder, part('physics').mainFile));
+		const problems = physicsProblems(physics, selectorNamesOf(geometry));
+		if (problems.length > 0) {
+			return fail(localize('run.physics', "Boundary Conditions & Loads: {0}", problems[0]));
+		}
+		const solver = await readJson(fileService, joinPath(root, part('solver').folder, part('solver').mainFile));
+		const analysis = solver?.analysisType ?? 'static_linear';
+		if (analysis !== 'static_linear') {
+			return fail(localize('run.analysis', "Only static linear analysis can run from a study yet"));
+		}
+	}
+	return { kind: 'study', canRun: true, target: root };
 }
 
 export async function resolvePartStatus(

@@ -9,6 +9,7 @@ import './progressView.js';
 import './editorFrame.js';
 import { RunOnceScheduler } from '../../../../base/common/async.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
+import { isWindows } from '../../../../base/common/platform.js';
 import { dirname, joinPath } from '../../../../base/common/resources.js';
 import Severity from '../../../../base/common/severity.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -29,7 +30,7 @@ import { IPathService } from '../../../services/path/common/pathService.js';
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { ITerminalGroupService, ITerminalService } from '../../terminal/browser/terminal.js';
-import { resolveBenchmarkUri, resolvePythonExecutable } from './projectParts.js';
+import { resolveBenchmarkUri, resolvePythonExecutable, resolveRunTarget } from './projectParts.js';
 import { StartEditor } from './startEditor.js';
 import { StartEditorInput } from './startEditorInput.js';
 
@@ -118,7 +119,7 @@ CommandsRegistry.registerCommand('maengine.project.create', async (accessor: Ser
 
 async function runMAEngineProcess(
 	accessor: ServicesAccessor,
-	action: 'mesh' | 'solve' | 'run' | 'post',
+	action: 'mesh' | 'solve' | 'run' | 'post' | 'inspect',
 	targetYaml?: string
 ): Promise<void> {
 	const terminalService = accessor.get(ITerminalService);
@@ -131,45 +132,63 @@ async function runMAEngineProcess(
 	const projectService = accessor.get(IMAEngineProjectService);
 
 	let targetCwd: string | undefined;
-	let yamlPath: string | undefined;
+	let commandArgs: string | undefined;
+	const quote = (p: string) => p.includes(' ') ? `"${p}"` : p;
 
 	if (targetYaml) {
 		const targetUri = URI.file(targetYaml);
 		if (await fileService.exists(targetUri)) {
-			yamlPath = targetYaml;
+			commandArgs = `${action} ${quote(targetYaml)}`;
 			targetCwd = dirname(targetUri).fsPath;
 		}
 	}
 
-	if (!yamlPath) {
-		const folders = contextService.getWorkspace().folders;
-		if (folders.length > 0) {
-			const candidate = joinPath(folders[0].uri, 'simulation.yaml');
-			if (await fileService.exists(candidate)) {
-				yamlPath = candidate.fsPath;
-				targetCwd = folders[0].uri.fsPath;
+	if (!commandArgs && action === 'inspect') {
+		// Reading the CAD model needs only an open study with an imported CAD file;
+		// the engine reports a missing file itself.
+		const project = projectService.project;
+		if (!project) {
+			notificationService.warn(localize('maengine.inspectNoStudy', "Open a study to read its CAD model."));
+			return;
+		}
+		commandArgs = `run-project ${quote(project.root.fsPath)} --stage inspect`;
+		targetCwd = project.root.fsPath;
+	}
+
+	if (!commandArgs) {
+		const run = await resolveRunTarget(action === 'mesh' ? 'mesh' : 'solve', fileService, contextService, projectService);
+		if (run.kind === 'spec' && run.target) {
+			commandArgs = `${action} ${quote(run.target.fsPath)}`;
+			targetCwd = dirname(run.target).fsPath;
+		} else if (run.kind === 'study' && run.target) {
+			if (!run.canRun) {
+				notificationService.warn(localize('maengine.studyNotReady', "This study can't run yet: {0}.", run.reason ?? ''));
+				return;
 			}
-		} else if (projectService.project) {
-			const candidate = joinPath(projectService.project.root, 'simulation.yaml');
-			if (await fileService.exists(candidate)) {
-				yamlPath = candidate.fsPath;
-				targetCwd = projectService.project.root.fsPath;
+			if (action === 'post') {
+				// Studies are post-processed as part of every solve; there is no separate step.
+				notificationService.info(localize('maengine.studyPostWithSolve', "Results are produced by each solver run. Run the solver to refresh them."));
+				return;
 			}
+			// mesh: mesh only; solve: reuse an up-to-date mesh, then solve; run: re-mesh, then solve.
+			commandArgs = `run-project ${quote(run.target.fsPath)} --stage ${action}`;
+			targetCwd = run.target.fsPath;
+		} else {
+			notificationService.prompt(
+				Severity.Info,
+				localize('maengine.noRunTarget', "Open a study (or a folder with a simulation.yaml) to run the engine."),
+				[
+					{
+						label: localize('maengine.openBenchmark', "Open benchmark"),
+						run: () => void commandService.executeCommand('maengine.project.loadBenchmark')
+					}
+				]
+			);
+			return;
 		}
 	}
 
-	if (!yamlPath || !targetCwd) {
-		// MAEngine GUI projects have no simulation.yaml: do NOT send a command
-		notificationService.prompt(
-			Severity.Info,
-			localize('maengine.engineNotConnected', "Running a study from the app isn't connected to the engine yet. MAEngine can run engine specs (simulation.yaml); converting this study's settings into one is not built yet."),
-			[
-				{
-					label: localize('maengine.openBenchmark', "Open benchmark"),
-					run: () => void commandService.executeCommand('maengine.project.loadBenchmark')
-				}
-			]
-		);
+	if (!commandArgs || !targetCwd) {
 		return;
 	}
 
@@ -179,7 +198,7 @@ async function runMAEngineProcess(
 		return;
 	}
 
-	notificationService.info(localize('maengine.executingJob', "[MAEngine] Executing {0} job on {1}...", action.toUpperCase(), yamlPath));
+	notificationService.info(localize('maengine.executingJob', "[MAEngine] Running {0} in the MAEngine CAE Engine terminal...", action));
 
 	let instance = terminalService.instances.find(t => t.title === 'MAEngine CAE Engine');
 	if (!instance) {
@@ -195,9 +214,9 @@ async function runMAEngineProcess(
 	await terminalGroupService.showPanel(true);
 	instance.focus();
 
-	const pyCmd = pythonExe.includes(' ') ? `"${pythonExe}"` : pythonExe;
-	const yamlCmd = yamlPath.includes(' ') ? `"${yamlPath}"` : yamlPath;
-	instance.sendText(`${pyCmd} -m maengine ${action} ${yamlCmd}`, true);
+	// A quoted executable must be invoked with '&' in PowerShell (the default Windows shell).
+	const pyCmd = pythonExe.includes(' ') ? `${isWindows ? '& ' : ''}"${pythonExe}"` : pythonExe;
+	instance.sendText(`${pyCmd} -m maengine ${commandArgs}`, true);
 }
 
 CommandsRegistry.registerCommand('maengine.mesh.run', async (accessor: ServicesAccessor, targetYaml?: string) => {
@@ -212,7 +231,11 @@ CommandsRegistry.registerCommand('maengine.runPipeline', async (accessor: Servic
 	await runMAEngineProcess(accessor, 'run', targetYaml);
 });
 
-CommandsRegistry.registerCommand('maengine.post.run', async (accessor: ServicesAccessor, targetYaml?: string) => {
+CommandsRegistry.registerCommand('maengine.geometry.inspect', async (accessor: ServicesAccessor) => {
+	await runMAEngineProcess(accessor, 'inspect');
+});
+
+CommandsRegistry.registerCommand('maengine.post.run',async (accessor: ServicesAccessor, targetYaml?: string) => {
 	await runMAEngineProcess(accessor, 'post', targetYaml);
 });
 

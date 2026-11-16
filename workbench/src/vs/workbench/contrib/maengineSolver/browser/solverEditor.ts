@@ -10,7 +10,7 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { dirname, joinPath } from '../../../../base/common/resources.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
-import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
@@ -29,7 +29,7 @@ import { IEditorGroup } from '../../../services/editor/common/editorGroupsServic
 import { EditorFrame } from '../../maengineProject/browser/editorFrame.js';
 import { IMAEnginePropertiesDockService } from '../../maengineProject/browser/propertiesDock.js';
 import { MAEngineTables } from '../../maengineProject/browser/tablesView.js';
-import { IPartStatus, resolvePartStatus, workspaceHasSimulationYaml } from '../../maengineProject/browser/projectParts.js';
+import { IPartStatus, IRunTarget, resolvePartStatus, resolveRunTarget } from '../../maengineProject/browser/projectParts.js';
 import { IMAEngineProjectService } from '../../../services/maengineProject/common/maengineProject.js';
 import { SolverEditorInput } from './solverEditorInput.js';
 
@@ -59,10 +59,11 @@ export class SolverEditor extends EditorPane {
 	private currentResource: any;
 	private logContent: string | undefined;
 	private currentStatus: IPartStatus | undefined;
-	private hasSimulationYaml = false;
+	private runTarget: IRunTarget | undefined;
 	private runAction!: Action;
 
 	private readonly inputDisposables = this._register(new DisposableStore());
+	private readonly statusPill = this._register(new MutableDisposable());
 
 	constructor(
 		group: IEditorGroup,
@@ -111,7 +112,9 @@ export class SolverEditor extends EditorPane {
 		if (resource) {
 			const folder = dirname(resource);
 			this.inputDisposables.add(this.fileService.onDidFilesChange(e => {
-				if (e.contains(resource) || e.affects(folder)) {
+				// Readiness depends on the other parts too (CAD import, supports, selectors).
+				const root = this.projectService.project?.root;
+				if (e.contains(resource) || e.affects(folder) || (root && e.affects(root))) {
 					void this.load(resource);
 				}
 			}));
@@ -141,22 +144,24 @@ export class SolverEditor extends EditorPane {
 			this.currentData = undefined;
 		}
 
-		// Try to read log file if present
-		try {
-			const dir = dirname(resource);
-			const logUri = joinPath(dir, 'calculix.log');
-			if (await this.fileService.exists(logUri)) {
-				const log = await this.fileService.readFile(logUri);
-				this.logContent = log.value.toString();
-			} else {
-				this.logContent = undefined;
+		// The engine's run log (run.log: what the study run did, or why it could not start)
+		// followed by CalculiX's own output (calculix.log). The terminal is hidden outside
+		// developer mode, so this is where a run's outcome is shown.
+		const logs: string[] = [];
+		for (const name of ['run.log', 'calculix.log']) {
+			try {
+				const logUri = joinPath(dirname(resource), name);
+				if (await this.fileService.exists(logUri)) {
+					logs.push((await this.fileService.readFile(logUri)).value.toString());
+				}
+			} catch {
+				// unreadable log: skip it
 			}
-		} catch {
-			this.logContent = undefined;
 		}
+		this.logContent = logs.length ? logs.join('\n') : undefined;
 
 		this.currentStatus = await resolvePartStatus('solver', this.fileService, this.projectService, this.currentData, resource);
-		this.hasSimulationYaml = await workspaceHasSimulationYaml(this.fileService, this.contextService, this.projectService);
+		this.runTarget = await resolveRunTarget('solve', this.fileService, this.contextService, this.projectService);
 		this.render();
 	}
 
@@ -167,10 +172,19 @@ export class SolverEditor extends EditorPane {
 		const isFailed = this.currentStatus?.state === 'failed';
 
 		// Keep button enabled only when running is possible
-		this.runAction.enabled = this.hasSimulationYaml;
+		// Left enabled while a run is marked running, so a killed run can be restarted.
+		const canRun = !!this.runTarget?.canRun;
+		this.runAction.enabled = canRun;
 
 		// Bottom Hint Strip
-		if (isConverged) {
+		if (isConverged && !canRun && this.runTarget?.kind === 'study') {
+			// The last run converged, but the study has changed since and cannot run as it stands.
+			this.frame.setStatus({
+				text: localize('solver.convergedCannotRerun', "Last run converged. Can't run again yet: {0}", this.runTarget.reason ?? ''),
+				severity: 'warning',
+				link: { label: localize('solver.openResults', "Open Results"), run: () => void this.commandService.executeCommand('maengine.project.openPart7') }
+			});
+		} else if (isConverged) {
 			this.frame.setStatus({
 				text: localize('solver.convergedHint', "Solver completed: solution converged"),
 				severity: 'info',
@@ -186,12 +200,12 @@ export class SolverEditor extends EditorPane {
 			this.frame.setStatus({
 				text: localize('solver.failedHint', "Solver run failed: check log output for details"),
 				severity: 'error',
-				link: this.hasSimulationYaml ? { label: localize('solver.retry', "Retry"), run: () => this.runSolver() } : undefined
+				link: canRun ? { label: localize('solver.retry', "Retry"), run: () => this.runSolver() } : undefined
 			});
 		} else {
-			if (!this.hasSimulationYaml) {
+			if (!canRun) {
 				this.frame.setStatus({
-					text: localize('solver.notConnectedHint', "Run isn't connected for this study yet")
+					text: localize('solver.cannotRunHint', "Can't run yet: {0}", this.runTarget?.reason ?? localize('solver.noRunTarget', "no study is open"))
 				});
 			} else {
 				this.frame.setStatus({
@@ -202,9 +216,10 @@ export class SolverEditor extends EditorPane {
 		}
 
 		// Status pill in toolbar endSlot
-		if (isConverged) {
-			this.inputDisposables.add(this.frame.createPill(localize('status.converged', "Converged"), { severity: 'warn', icon: Codicon.passFilled }));
-		}
+		// One pill at most: render() runs on every file change.
+		this.statusPill.value = isConverged
+			? this.frame.createPill(localize('status.converged', "Converged"), { icon: Codicon.passFilled })
+			: undefined;
 
 		// Register Convergence table to bottom Tables panel
 		this.inputDisposables.add(MAEngineTables.registerTable<ISolverConvergenceRow>({
@@ -289,7 +304,7 @@ export class SolverEditor extends EditorPane {
 		append(logHeader, $('span', undefined, localize('solver.logHeader', "Solver Run Log")));
 
 		if (this.logContent) {
-			const logBox = append(right, $('<pre>.ma-solver-log-box'));
+			const logBox = append(right, $('pre.ma-solver-log-box'));
 			logBox.textContent = this.logContent;
 		} else {
 			const emptyBox = append(right, $('.ma-solver-empty-log'));
