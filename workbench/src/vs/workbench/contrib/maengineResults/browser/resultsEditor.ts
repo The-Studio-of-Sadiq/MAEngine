@@ -101,7 +101,9 @@ export class ResultsEditor extends EditorPane {
 			const folder = dirname(resource);
 			const solverFolder = joinPath(dirname(folder), '06 Solver');
 			this.inputDisposables.add(this.fileService.onDidFilesChange(e => {
-				if (e.contains(resource) || e.affects(folder) || e.affects(solverFolder)) {
+				// Staleness depends on every input part, so any change in the study can matter.
+				const root = this.projectService.project?.root;
+				if (e.contains(resource) || e.affects(folder) || e.affects(solverFolder) || (root && e.affects(root))) {
 					void this.load(resource);
 				}
 			}));
@@ -136,7 +138,9 @@ export class ResultsEditor extends EditorPane {
 
 	private render(): void {
 		const data = this.currentData;
-		const hasResults = this.currentStatus?.state === 'done';
+		// Out-of-date results are still shown, with a warning that the inputs changed.
+		const isStale = this.currentStatus?.state === 'stale';
+		const hasResults = this.currentStatus?.state === 'done' || isStale;
 
 		if (!hasResults) {
 			if (this.segmentControl) {
@@ -183,9 +187,17 @@ export class ResultsEditor extends EditorPane {
 
 		// When results are present
 		this.frame.setEmpty(undefined);
-		this.frame.setStatus({
-			text: localize('results.statusDone', "Solution available: von Mises stress and deformation fields computed")
-		});
+		if (isStale) {
+			this.frame.setStatus({
+				text: localize('results.statusStale', "Out of date: {0}. Run the solver again to update these results.", this.currentStatus?.hint ?? ''),
+				severity: 'warning',
+				link: { label: localize('results.openSolver', "Open Solver"), run: () => void this.commandService.executeCommand('maengine.project.openPart6') }
+			});
+		} else {
+			this.frame.setStatus({
+				text: localize('results.statusDone', "Solution available: von Mises stress and deformation fields computed")
+			});
+		}
 
 		const summary = data?.summary;
 		const na = localize('val.na', "n/a");

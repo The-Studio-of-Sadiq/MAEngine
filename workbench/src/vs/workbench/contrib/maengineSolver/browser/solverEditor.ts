@@ -167,7 +167,8 @@ export class SolverEditor extends EditorPane {
 
 	private render(): void {
 		const data = this.currentData ?? {};
-		const isConverged = this.currentStatus?.state === 'done';
+		const isStale = this.currentStatus?.state === 'stale';
+		const isConverged = this.currentStatus?.state === 'done' || isStale;
 		const isRunning = this.currentStatus?.state === 'inProgress';
 		const isFailed = this.currentStatus?.state === 'failed';
 
@@ -183,6 +184,12 @@ export class SolverEditor extends EditorPane {
 				text: localize('solver.convergedCannotRerun', "Last run converged. Can't run again yet: {0}", this.runTarget.reason ?? ''),
 				severity: 'warning',
 				link: { label: localize('solver.openResults', "Open Results"), run: () => void this.commandService.executeCommand('maengine.project.openPart7') }
+			});
+		} else if (isStale) {
+			this.frame.setStatus({
+				text: localize('solver.staleHint', "Last run converged, but its results are out of date: {0}", this.currentStatus?.hint ?? ''),
+				severity: 'warning',
+				link: canRun ? { label: localize('solver.runAgain', "Run again"), run: () => this.runSolver() } : undefined
 			});
 		} else if (isConverged) {
 			this.frame.setStatus({
@@ -217,9 +224,11 @@ export class SolverEditor extends EditorPane {
 
 		// Status pill in toolbar endSlot
 		// One pill at most: render() runs on every file change.
-		this.statusPill.value = isConverged
-			? this.frame.createPill(localize('status.converged', "Converged"), { icon: Codicon.passFilled })
-			: undefined;
+		this.statusPill.value = isStale
+			? this.frame.createPill(localize('status.outOfDate', "Out of date"), { icon: Codicon.history, severity: 'warn', title: this.currentStatus?.hint })
+			: isConverged
+				? this.frame.createPill(localize('status.converged', "Converged"), { icon: Codicon.passFilled })
+				: undefined;
 
 		// Register Convergence table to bottom Tables panel
 		this.inputDisposables.add(MAEngineTables.registerTable<ISolverConvergenceRow>({
@@ -317,10 +326,11 @@ export class SolverEditor extends EditorPane {
 
 	private updateProperties(): void {
 		const data = this.currentData ?? {};
+		const isStale = this.currentStatus?.state === 'stale';
 		const isConverged = this.currentStatus?.state === 'done';
 		const isRunning = this.currentStatus?.state === 'inProgress';
 		const isFailed = this.currentStatus?.state === 'failed';
-		const statusText = isConverged ? 'converged' : isRunning ? 'running' : isFailed ? 'failed' : 'not run';
+		const statusText = isStale ? 'converged (out of date)' : isConverged ? 'converged' : isRunning ? 'running' : isFailed ? 'failed' : 'not run';
 
 		this.propertiesDockService.setProperties({
 			title: localize('solver.propertiesTitle', "Solver Configuration"),

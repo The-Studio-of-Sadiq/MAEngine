@@ -520,6 +520,13 @@ export async function derivePartStatus(
 			if (hasSolverOutput) {
 				const status = typeof data.status === 'string' ? data.status.toLowerCase() : '';
 				if (status === 'converged' || status === 'solved' || status === 'success') {
+					const changed = await inputsChangedSinceRun(project, fileService);
+					if (changed.length > 0) {
+						return {
+							part: part.id, state: 'stale', text: localize('partStatus.outOfDate', "out of date"),
+							hint: localize('partStatus.changedSinceRun', "Changed since the last run: {0}", changed.join(', ')),
+						};
+					}
 					return { part: part.id, state: 'done', text: localize('partStatus.converged', "converged") };
 				}
 				if (status === 'failed' || status === 'error') {
@@ -567,6 +574,13 @@ export async function derivePartStatus(
 			}
 
 			if (hasResultFile) {
+				const changed = await inputsChangedSinceRun(project, fileService);
+				if (changed.length > 0) {
+					return {
+						part: part.id, state: 'stale', text: localize('partStatus.outOfDate', "out of date"),
+						hint: localize('partStatus.changedSinceRun', "Changed since the last run: {0}", changed.join(', ')),
+					};
+				}
 				return { part: part.id, state: 'done', text: localize('partStatus.ready', "ready") };
 			}
 			return { part: part.id, state: 'notStarted', text: localize('partStatus.none', "none") };
@@ -818,6 +832,56 @@ export function physicsProblems(physics: any, selectorNames: readonly string[]):
 		problems.push(localize('physics.problem.gravity', "gravity must be [gx, gy, gz] in mm/s² or None"));
 	}
 	return [...new Set(problems)];
+}
+
+/**
+ * The study inputs that changed after the last solver run wrote its results (.frd), by part name.
+ * Empty when there is no run to compare with or nothing changed. Run outputs that the engine
+ * writes itself (solver.json, results.json) are not inputs.
+ */
+export async function inputsChangedSinceRun(project: IMechastudioProject, fileService: IFileService): Promise<string[]> {
+	const partFile = (id: string) => {
+		const part = PROJECT_PARTS.find(p => p.id === id)!;
+		return joinPath(project.root, part.folder, part.mainFile);
+	};
+	const mtime = async (uri: URI): Promise<number | undefined> => {
+		try {
+			return (await fileService.stat(uri)).mtime;
+		} catch {
+			return undefined;
+		}
+	};
+	const solver = await readJson(fileService, partFile('solver'));
+	const frdName = solver?.lastRun?.frdFile;
+	if (typeof frdName !== 'string' || !frdName) {
+		return [];
+	}
+	const solverPart = PROJECT_PARTS.find(p => p.id === 'solver')!;
+	const runTime = await mtime(joinPath(project.root, solverPart.folder, frdName));
+	if (runTime === undefined) {
+		return [];
+	}
+	const geometryUri = partFile('geometry');
+	const geometry = await readJson(fileService, geometryUri);
+	const geometryPart = PROJECT_PARTS.find(p => p.id === 'geometry')!;
+	const meshPart = PROJECT_PARTS.find(p => p.id === 'mesh')!;
+	const inputs: [string, URI | undefined][] = [
+		[localize('stale.settings', "Study Settings"), partFile('settings')],
+		[localize('stale.geometry', "Geometry"), geometryUri],
+		[localize('stale.cad', "CAD file"), typeof geometry?.cadFile === 'string' && geometry.cadFile ? joinPath(project.root, geometryPart.folder, geometry.cadFile) : undefined],
+		[localize('stale.materials', "Materials"), partFile('materials')],
+		[localize('stale.mesh', "Mesh"), partFile('mesh')],
+		[localize('stale.meshFile', "Mesh"), joinPath(project.root, meshPart.folder, 'model_mesh.inp')],
+		[localize('stale.physics', "Boundary Conditions & Loads"), partFile('physics')],
+	];
+	const changed: string[] = [];
+	for (const [name, uri] of inputs) {
+		const t = uri ? await mtime(uri) : undefined;
+		if (t !== undefined && t > runTime && !changed.includes(name)) {
+			changed.push(name);
+		}
+	}
+	return changed;
 }
 
 export function selectorNamesOf(geometry: any): string[] {
