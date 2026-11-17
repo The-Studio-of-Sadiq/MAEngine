@@ -16,6 +16,8 @@ import { URI } from '../../../../base/common/uri.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
 import { CommandsRegistry, ICommandService } from '../../../../platform/commands/common/commands.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
@@ -119,7 +121,7 @@ CommandsRegistry.registerCommand('maengine.project.create', async (accessor: Ser
 
 async function runMAEngineProcess(
 	accessor: ServicesAccessor,
-	action: 'mesh' | 'solve' | 'run' | 'post' | 'inspect',
+	action: 'mesh' | 'solve' | 'run' | 'post' | 'inspect' | 'solidcraftOpen' | 'solidcraftExport',
 	targetYaml?: string
 ): Promise<void> {
 	const terminalService = accessor.get(ITerminalService);
@@ -130,12 +132,13 @@ async function runMAEngineProcess(
 	const fileService = accessor.get(IFileService);
 	const environmentService = accessor.get(IEnvironmentService);
 	const projectService = accessor.get(IMAEngineProjectService);
+	const configurationService = accessor.get(IConfigurationService);
 
 	let targetCwd: string | undefined;
 	let commandArgs: string | undefined;
 	const quote = (p: string) => p.includes(' ') ? `"${p}"` : p;
 
-	if (targetYaml) {
+	if (targetYaml && action !== 'solidcraftOpen' && action !== 'solidcraftExport') {
 		const targetUri = URI.file(targetYaml);
 		if (await fileService.exists(targetUri)) {
 			commandArgs = `${action} ${quote(targetYaml)}`;
@@ -152,6 +155,19 @@ async function runMAEngineProcess(
 			return;
 		}
 		commandArgs = `run-project ${quote(project.root.fsPath)} --stage inspect`;
+		targetCwd = project.root.fsPath;
+	}
+
+	if (!commandArgs && (action === 'solidcraftOpen' || action === 'solidcraftExport')) {
+		const project = projectService.project;
+		if (!project) {
+			notificationService.warn(localize('maengine.solidcraftNoStudy', "Open a study to model its geometry in SolidCraft."));
+			return;
+		}
+		const subAction = action === 'solidcraftOpen' ? 'open' : 'export';
+		const scDir = configurationService.getValue<string>('maengine.solidcraft.path');
+		const dirArg = (typeof scDir === 'string' && scDir.trim().length > 0) ? ` --solidcraft-dir ${quote(scDir.trim())}` : '';
+		commandArgs = `solidcraft ${subAction} ${quote(project.root.fsPath)}${dirArg}`;
 		targetCwd = project.root.fsPath;
 	}
 
@@ -198,7 +214,13 @@ async function runMAEngineProcess(
 		return;
 	}
 
-	notificationService.info(localize('maengine.executingJob', "[MAEngine] Running {0} in the MAEngine CAE Engine terminal...", action));
+	if (action === 'solidcraftOpen') {
+		notificationService.info(localize('maengine.solidcraftOpening', "Opening the geometry in SolidCraft..."));
+	} else if (action === 'solidcraftExport') {
+		notificationService.info(localize('maengine.solidcraftExporting', "Exporting STEP from SolidCraft..."));
+	} else {
+		notificationService.info(localize('maengine.executingJob', "[MAEngine] Running {0} in the MAEngine CAE Engine terminal...", action));
+	}
 
 	let instance = terminalService.instances.find(t => t.title === 'MAEngine CAE Engine');
 	if (!instance) {
@@ -235,7 +257,30 @@ CommandsRegistry.registerCommand('maengine.geometry.inspect', async (accessor: S
 	await runMAEngineProcess(accessor, 'inspect');
 });
 
+CommandsRegistry.registerCommand('maengine.solidcraft.open', async (accessor: ServicesAccessor) => {
+	await runMAEngineProcess(accessor, 'solidcraftOpen');
+});
+
+CommandsRegistry.registerCommand('maengine.solidcraft.export', async (accessor: ServicesAccessor) => {
+	await runMAEngineProcess(accessor, 'solidcraftExport');
+});
+
 CommandsRegistry.registerCommand('maengine.post.run',async (accessor: ServicesAccessor, targetYaml?: string) => {
 	await runMAEngineProcess(accessor, 'post', targetYaml);
+});
+
+// MAEngine does not bundle SolidCraft (its brand licence reserves its interface);
+// it launches the user's own install.
+Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).registerConfiguration({
+	id: 'maengineSolidCraft',
+	title: localize('maengineSolidCraftTitle', "MAEngine SolidCraft"),
+	type: 'object',
+	properties: {
+		'maengine.solidcraft.path': {
+			type: 'string',
+			default: '',
+			description: localize('maengine.solidcraft.path.description', "Folder that holds SolidCraft's solidcraft-cli and solidcraft programs. Leave empty to search PATH and the standard install folders.")
+		}
+	}
 });
 

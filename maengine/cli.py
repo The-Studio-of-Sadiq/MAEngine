@@ -79,6 +79,20 @@ def cmd_run_project(args):
     sys.exit(run_project(args.study, stage=args.stage))
 
 
+def cmd_solidcraft(args):
+    from maengine.solidcraft import export_from_solidcraft, locate_solidcraft, open_in_solidcraft
+
+    if args.action == "locate":
+        sys.exit(locate_solidcraft(args.solidcraft_dir))
+    if not args.study:
+        print(f"[-] A study folder path is required for 'solidcraft {args.action}'.", flush=True)
+        sys.exit(2)
+    if args.action == "open":
+        sys.exit(open_in_solidcraft(args.study, args.solidcraft_dir))
+    elif args.action == "export":
+        sys.exit(export_from_solidcraft(args.study, args.solidcraft_dir))
+
+
 def cmd_view(args):
     target_file = os.path.abspath(args.file)
     if not os.path.exists(target_file):
@@ -240,6 +254,13 @@ def main():
         help="check: validate only; mesh: mesh only; solve: reuse a current mesh, then solve; run: re-mesh and solve",
     )
     p_rp.set_defaults(func=cmd_run_project)
+
+    # Command: solidcraft (parametric CAD modeling and STEP export)
+    p_sc = subparsers.add_parser("solidcraft", help="Model study geometry in SolidCraft and export STEP")
+    p_sc.add_argument("action", choices=["open", "export", "locate"], help="Action: open, export, or locate")
+    p_sc.add_argument("study", nargs="?", default=None, help="Path to study folder (required for open and export)")
+    p_sc.add_argument("--solidcraft-dir", default=None, help="Folder holding solidcraft-cli and solidcraft (else MAENGINE_SOLIDCRAFT_DIR, PATH, standard install folders)")
+    p_sc.set_defaults(func=cmd_solidcraft)
 
     # Command: view
     p_view = subparsers.add_parser("view", help="Inspect and display metadata of 3D simulation assets")

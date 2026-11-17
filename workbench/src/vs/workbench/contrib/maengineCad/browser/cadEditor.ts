@@ -14,6 +14,7 @@ import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { ConfigurationTarget, IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
@@ -27,7 +28,7 @@ import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
-import { EditorFrame } from '../../maengineProject/browser/editorFrame.js';
+import { EditorFrame, IEditorFrameEmptyAction } from '../../maengineProject/browser/editorFrame.js';
 import { IMAEnginePropertiesDockService } from '../../maengineProject/browser/propertiesDock.js';
 import { MAEngineTables } from '../../maengineProject/browser/tablesView.js';
 import { IPartStatus, resolvePartStatus } from '../../maengineProject/browser/projectParts.js';
@@ -56,6 +57,8 @@ interface ICadSelector {
 interface ICadData {
 	readonly schema?: number;
 	readonly cadFile?: string;
+	readonly solidcraftDesign?: string;
+	readonly solidcraftStatus?: { readonly action?: string; readonly ok?: boolean; readonly notFound?: boolean; readonly message?: string; readonly at?: string };
 	readonly bodies?: readonly ICadBody[];
 	readonly modelBounds?: readonly number[];
 	readonly faces?: readonly ICadFace[];
@@ -111,6 +114,7 @@ export class CadEditor extends EditorPane {
 		@IMAEngineProjectService private readonly projectService: IMAEngineProjectService,
 		@ICommandService private readonly commandService: ICommandService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
 		super(CadEditorInput.EDITOR_ID, group, telemetryService, themeService, storageService);
 	}
@@ -252,15 +256,42 @@ export class CadEditor extends EditorPane {
 		const hasGeometry = this.currentStatus?.state === 'done';
 
 		if (!hasGeometry) {
-			this.frame.setEmpty({
-				icon: Codicon.package,
-				title: localize('cad.emptyTitle', "No geometry yet"),
-				text: localize('cad.emptyText', "No geometry yet. Import a STEP, IGES or BREP file."),
-				actions: [{
+			let emptyText = localize('cad.emptyText', "Import a STEP, IGES or BREP file to start.");
+			if (data?.solidcraftStatus && data.solidcraftStatus.ok === false && data.solidcraftStatus.message) {
+				emptyText = localize('cad.emptySolidCraftStatus', "SolidCraft: {0}", data.solidcraftStatus.message);
+			}
+
+			const emptyActions: IEditorFrameEmptyAction[] = [
+				{
 					label: localize('cad.importAction', "Import CAD..."),
 					primary: true,
 					run: () => void this.importCad()
-				}]
+				},
+				{
+					label: localize('cad.emptyModelInSolidCraft', "Model in SolidCraft..."),
+					run: () => void this.modelInSolidCraft()
+				}
+			];
+
+			if (data?.solidcraftDesign) {
+				emptyActions.push({
+					label: localize('cad.emptyUpdateFromSolidCraft', "Update from SolidCraft"),
+					run: () => void this.updateFromSolidCraft()
+				});
+			}
+
+			if (data?.solidcraftStatus?.ok === false && data.solidcraftStatus.notFound) {
+				emptyActions.push({
+					label: localize('cad.emptyChooseSolidCraftFolder', "Choose SolidCraft folder..."),
+					run: () => void this.chooseSolidCraftFolder()
+				});
+			}
+
+			this.frame.setEmpty({
+				icon: Codicon.package,
+				title: localize('cad.emptyTitle', "No geometry yet"),
+				text: emptyText,
+				actions: emptyActions
 			});
 			this.frame.setStatus({
 				text: localize('cad.emptyStatus', "No geometry imported"),
@@ -342,6 +373,22 @@ export class CadEditor extends EditorPane {
 			void this.commandService.executeCommand('maengine.geometry.inspect');
 		}));
 
+		const modelInScBtn = append(modelHead, $<HTMLButtonElement>('button.monaco-button', { type: 'button' }, localize('cad.modelInSolidCraft', "Model in SolidCraft")));
+		modelInScBtn.style.padding = '2px 8px';
+		modelInScBtn.style.fontSize = 'var(--ma-font-xs, 11px)';
+		this.inputDisposables.add(addDisposableListener(modelInScBtn, EventType.CLICK, () => {
+			void this.modelInSolidCraft();
+		}));
+
+		if (data?.solidcraftDesign) {
+			const updateScBtn = append(modelHead, $<HTMLButtonElement>('button.monaco-button', { type: 'button' }, localize('cad.updateFromSolidCraft', "Update from SolidCraft")));
+			updateScBtn.style.padding = '2px 8px';
+			updateScBtn.style.fontSize = 'var(--ma-font-xs, 11px)';
+			this.inputDisposables.add(addDisposableListener(updateScBtn, EventType.CLICK, () => {
+				void this.updateFromSolidCraft();
+			}));
+		}
+
 		const modelBody = append(modelSec, $('.ma-cad-model-body'));
 		if (data?.modelBounds && data.modelBounds.length >= 6) {
 			const faceCount = data.faces ? data.faces.length : 0;
@@ -349,6 +396,26 @@ export class CadEditor extends EditorPane {
 			append(modelBody, $('span', undefined, localize('cad.modelBoundsDesc', "Model bounds: {0}, {1}", fmtBox(data.modelBounds), faceText)));
 		} else {
 			append(modelBody, $('span.ma-cad-empty-notice', undefined, localize('cad.modelNotRead', "The CAD model has not been read yet.")));
+		}
+
+		if (data?.solidcraftDesign) {
+			append(modelBody, $('div', undefined, localize('cad.solidcraftDesign', "SolidCraft design: {0}", data.solidcraftDesign)));
+		}
+
+		if (data?.solidcraftStatus) {
+			const statusLine = append(modelBody, $('div' + (data.solidcraftStatus.ok === false ? '.ma-cad-empty-notice' : '')));
+			if (data.solidcraftStatus.message) {
+				append(statusLine, $('span', undefined, data.solidcraftStatus.message));
+			}
+			if (data.solidcraftStatus.notFound) {
+				const chooseBtn = append(statusLine, $<HTMLButtonElement>('button.monaco-button', { type: 'button' }, localize('cad.chooseSolidCraftFolder', "Choose SolidCraft folder...")));
+				chooseBtn.style.padding = '2px 8px';
+				chooseBtn.style.fontSize = 'var(--ma-font-xs, 11px)';
+				chooseBtn.style.marginLeft = data.solidcraftStatus.message ? '8px' : '0';
+				this.inputDisposables.add(addDisposableListener(chooseBtn, EventType.CLICK, () => {
+					void this.chooseSolidCraftFolder();
+				}));
+			}
 		}
 
 		// b. Face selectors section
@@ -737,6 +804,36 @@ export class CadEditor extends EditorPane {
 			this.notificationService.info(localize('cad.imported', "Imported {0} into the study.", basename(picked)));
 		} catch (err) {
 			this.notificationService.error(localize('cad.importFailed', "Could not import {0}: {1}", basename(picked), String(err)));
+		}
+	}
+
+	private modelInSolidCraft(): void {
+		void this.commandService.executeCommand('maengine.solidcraft.open');
+	}
+
+	private updateFromSolidCraft(): void {
+		void this.commandService.executeCommand('maengine.solidcraft.export');
+	}
+
+	private async chooseSolidCraftFolder(): Promise<void> {
+		const picked = await this.fileDialogService.showOpenDialog({
+			canSelectFolders: true,
+			canSelectFiles: false,
+			canSelectMany: false,
+			title: localize('cad.chooseSolidCraftTitle', "Choose the SolidCraft folder"),
+			openLabel: localize('cad.chooseSolidCraftOpenLabel', "Use folder")
+		});
+		if (!picked || picked.length === 0) {
+			return;
+		}
+
+		await this.configurationService.updateValue('maengine.solidcraft.path', picked[0].fsPath, ConfigurationTarget.USER);
+		this.notificationService.info(localize('cad.solidcraftFolderSet', "SolidCraft folder set to {0}.", picked[0].fsPath));
+
+		if (this.currentData?.solidcraftStatus?.action === 'open') {
+			this.modelInSolidCraft();
+		} else {
+			this.updateFromSolidCraft();
 		}
 	}
 
