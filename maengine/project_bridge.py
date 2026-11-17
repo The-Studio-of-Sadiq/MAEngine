@@ -853,8 +853,23 @@ def run_project(study_dir: str, stage: str = "run") -> int:
             _log(f"    - {p}")
         if stage in ("solve", "run") and os.path.exists(_part_path(study_dir, "solver")):
             # Earlier outputs no longer describe the study as it stands; say this run failed.
-            _update_part(study_dir, "solver", {"status": "failed", "lastRun": {
-                "startedAt": _now(), "error": "The study is not ready to run (see run.log)."}})
+            solver_json = _part_path(study_dir, "solver")
+            last_run: Dict[str, Any] = {
+                "startedAt": _now(),
+                "error": "The study is not ready to run (see run.log).",
+            }
+            try:
+                with open(solver_json, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    prev = loaded.get("lastRun")
+                    if isinstance(prev, dict):
+                        frd = prev.get("frdFile")
+                        if isinstance(frd, str) and frd.strip():
+                            last_run["frdFile"] = frd
+            except (OSError, ValueError):
+                pass
+            _update_part(study_dir, "solver", {"status": "failed", "lastRun": last_run})
         return 2
     for note in context["notes"]:
         _log(f"[i] {note}")
