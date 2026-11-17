@@ -32,7 +32,7 @@ export class ResultsEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('resultsEditor.name', "07 Analysis Results");
+		return localize('resultsEditor.name', "Results");
 	}
 
 	override getIcon(): ThemeIcon {

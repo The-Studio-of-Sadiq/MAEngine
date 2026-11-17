@@ -32,7 +32,7 @@ export class SolverEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('solverEditor.name', "06 Solver Manager");
+		return localize('solverEditor.name', "Solver");
 	}
 
 	override getIcon(): ThemeIcon {

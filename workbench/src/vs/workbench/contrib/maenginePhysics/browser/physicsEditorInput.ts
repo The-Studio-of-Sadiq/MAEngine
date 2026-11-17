@@ -32,7 +32,7 @@ export class PhysicsEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('physicsEditor.name', "05 Physics & BCs");
+		return localize('physicsEditor.name', "Boundary Conditions & Loads");
 	}
 
 	override getIcon(): ThemeIcon {

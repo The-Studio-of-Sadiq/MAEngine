@@ -32,7 +32,7 @@ export class MaterialEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('materialEditor.name', "03 Materials");
+		return localize('materialEditor.name', "Materials");
 	}
 
 	override getIcon(): ThemeIcon {

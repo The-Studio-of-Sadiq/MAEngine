@@ -245,6 +245,8 @@ export class PropertiesDockView extends ViewPane {
 	private emptyArea: HTMLElement | undefined;
 	private activeDockedFrame: IPropertiesDockFrame | undefined;
 	private readonly renderDisposables = this._register(new DisposableStore());
+	private propsOwner: unknown;
+	private isUpdating = false;
 
 	constructor(
 		options: IViewPaneOptions,
@@ -262,10 +264,22 @@ export class PropertiesDockView extends ViewPane {
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 
-		this._register(this.dockService.onDidChangeProperties(() => this.update()));
+		this._register(this.dockService.onDidChangeProperties(() => {
+			if (this.dockService.currentProperties !== undefined) {
+				this.propsOwner = this.editorService.activeEditorPane;
+			} else {
+				this.propsOwner = undefined;
+			}
+			this.update();
+		}));
 		this._register(this.dockService.onDidChangeFrames(() => this.updateActiveFrame()));
 		this._register(this.dockService.onDidChangeEnabled(() => this.update()));
-		this._register(this.editorService.onDidActiveEditorChange(() => this.updateActiveFrame()));
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			if (this.dockService.currentProperties !== undefined && this.propsOwner !== this.editorService.activeEditorPane) {
+				this.dockService.clearProperties();
+			}
+			this.updateActiveFrame();
+		}));
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -276,6 +290,15 @@ export class PropertiesDockView extends ViewPane {
 		this.contentArea = append(container, $('.ma-props-dock-content'));
 		this.emptyArea = append(container, $('.ma-props-dock-empty'));
 		this.emptyArea.textContent = localize('properties.hint', "Select an item to see its properties.");
+
+		const observer = new MutationObserver(() => {
+			if (this.isUpdating) {
+				return;
+			}
+			this.update();
+		});
+		observer.observe(this.hostArea, { childList: true, subtree: true, characterData: true });
+		this._register(toDisposable(() => observer.disconnect()));
 
 		this.updateActiveFrame();
 	}
@@ -311,65 +334,80 @@ export class PropertiesDockView extends ViewPane {
 		this.update();
 	}
 
+	private hasDockedContent(): boolean {
+		if (!this.activeDockedFrame || !this.hostArea) {
+			return false;
+		}
+		if (this.hostArea.textContent?.trim()) {
+			return true;
+		}
+		return this.hostArea.querySelector('input, select, textarea, button, canvas, svg, img, table, video, iframe, [role]') !== null;
+	}
+
 	private update(): void {
-		if (!this.contentArea || !this.emptyArea || !this.hostArea) {
+		if (!this.contentArea || !this.emptyArea || !this.hostArea || this.isUpdating) {
 			return;
 		}
 
-		this.renderDisposables.clear();
-		clearNode(this.contentArea);
+		this.isUpdating = true;
+		try {
+			this.renderDisposables.clear();
+			clearNode(this.contentArea);
 
-		const hasDockedContent = !!this.activeDockedFrame && this.hostArea.children.length > 0;
-		const props = this.dockService.currentProperties;
+			const hasDockedContent = this.hasDockedContent();
+			const props = this.dockService.currentProperties;
 
-		if (hasDockedContent) {
-			this.hostArea.classList.remove('hidden');
-			this.contentArea.classList.add('hidden');
-			this.emptyArea.classList.add('hidden');
-			return;
-		}
-
-		this.hostArea.classList.add('hidden');
-
-		if (!props) {
-			this.contentArea.classList.add('hidden');
-			this.emptyArea.classList.remove('hidden');
-			return;
-		}
-
-		this.contentArea.classList.remove('hidden');
-		this.emptyArea.classList.add('hidden');
-
-		// Render published properties sheet
-		const sheet = append(this.contentArea, $('.ma-props-sheet'));
-		appendPropertyHeading(sheet, props.title, props.detail);
-
-		if (props.warning) {
-			const warnBox = append(sheet, $('.ma-props-warning'));
-			append(warnBox, $(`span${ThemeIcon.asCSSSelector(Codicon.warning)}`));
-			append(warnBox, $('span', undefined, props.warning));
-		}
-
-		for (const row of props.rows) {
-			appendPropertyRow(sheet, row.name, row.value, row.problem);
-		}
-
-		if (props.note) {
-			appendPropertyNote(sheet, props.note);
-		}
-
-		if (props.actions?.length) {
-			const actionRow = append(sheet, $('.ma-props-actions'));
-			for (const act of props.actions) {
-				const link = append(actionRow, $('a.ma-props-action-link', { role: 'button', tabIndex: 0 }, act.label));
-				this.renderDisposables.add(addDisposableListener(link, EventType.CLICK, () => act.run()));
-				this.renderDisposables.add(addDisposableListener(link, EventType.KEY_DOWN, e => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						e.preventDefault();
-						act.run();
-					}
-				}));
+			if (hasDockedContent) {
+				this.hostArea.classList.remove('hidden');
+				this.contentArea.classList.add('hidden');
+				this.emptyArea.classList.add('hidden');
+				return;
 			}
+
+			this.hostArea.classList.add('hidden');
+
+			if (!props) {
+				this.contentArea.classList.add('hidden');
+				this.emptyArea.classList.remove('hidden');
+				return;
+			}
+
+			this.contentArea.classList.remove('hidden');
+			this.emptyArea.classList.add('hidden');
+
+			// Render published properties sheet
+			const sheet = append(this.contentArea, $('.ma-props-sheet'));
+			appendPropertyHeading(sheet, props.title, props.detail);
+
+			if (props.warning) {
+				const warnBox = append(sheet, $('.ma-props-warning'));
+				append(warnBox, $(`span${ThemeIcon.asCSSSelector(Codicon.warning)}`));
+				append(warnBox, $('span', undefined, props.warning));
+			}
+
+			for (const row of props.rows) {
+				appendPropertyRow(sheet, row.name, row.value, row.problem);
+			}
+
+			if (props.note) {
+				appendPropertyNote(sheet, props.note);
+			}
+
+			if (props.actions?.length) {
+				const actionRow = append(sheet, $('.ma-props-actions'));
+				for (const act of props.actions) {
+					const link = append(actionRow, $('a.ma-props-action-link', { role: 'button', tabIndex: 0 }, act.label));
+					this.renderDisposables.add(addDisposableListener(link, EventType.CLICK, () => act.run()));
+					this.renderDisposables.add(addDisposableListener(link, EventType.KEY_DOWN, e => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							act.run();
+						}
+					}));
+				}
+			}
+		} finally {
+			this.isUpdating = false;
 		}
 	}
 }

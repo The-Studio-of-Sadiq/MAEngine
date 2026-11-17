@@ -492,6 +492,14 @@
 	box-sizing: border-box;
 }
 
+/* The view toggles its three areas with a `hidden` class. The docked host also carries
+   editor-frame classes that set `display: flex`, so `hidden` must win explicitly. */
+.maengine-properties-dock .ma-props-dock-host.hidden,
+.maengine-properties-dock .ma-props-dock-content.hidden,
+.maengine-properties-dock .ma-props-dock-empty.hidden {
+	display: none !important;
+}
+
 .maengine-properties-dock .ma-props-dock-empty {
 	padding: var(--ma-space-3, 12px);
 	color: var(--ma-muted, var(--vscode-descriptionForeground));

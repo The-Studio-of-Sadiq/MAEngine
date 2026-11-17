@@ -32,7 +32,7 @@ export class MeshEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('meshEditor.name', "04 3D Conformal Mesh");
+		return localize('meshEditor.name', "Mesh");
 	}
 
 	override getIcon(): ThemeIcon {

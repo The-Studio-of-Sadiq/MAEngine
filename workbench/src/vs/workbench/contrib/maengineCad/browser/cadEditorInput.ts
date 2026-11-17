@@ -32,7 +32,7 @@ export class CadEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return localize('cadEditor.name', "02 Geometry & CAD");
+		return localize('cadEditor.name', "Geometry");
 	}
 
 	override getIcon(): ThemeIcon {
