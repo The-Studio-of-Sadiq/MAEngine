@@ -44,6 +44,7 @@ interface ISolverData {
 	solver?: string;
 	executable?: string;
 	analysisType?: string;
+	modes?: number;
 	threads?: number;
 	status?: 'idle' | 'running' | 'converged' | 'failed' | string;
 	lastRun?: ISolverLastRun;
@@ -336,11 +337,67 @@ export class SolverEditor extends EditorPane {
 		append(fType, $('label', undefined, localize('solver.analysisType', "Analysis Step Type")));
 		const selType = append(fType, $<HTMLSelectElement>('select'));
 		append(selType, $<HTMLOptionElement>('option', { value: 'static_linear' }, localize('solver.staticLinear', "Static Linear Stress (*STATIC)")));
+		append(selType, $<HTMLOptionElement>('option', { value: 'modal_frequency' }, localize('solver.modalFrequency', "Modal: natural frequencies (*FREQUENCY)")));
 		const analysisType = data.analysisType || 'static_linear';
-		if (analysisType !== 'static_linear') {
+		if (analysisType !== 'static_linear' && analysisType !== 'modal_frequency') {
 			append(selType, $<HTMLOptionElement>('option', { value: analysisType }, localize('solver.unsupportedAnalysisType', "{0} (not supported yet)", analysisType)));
 		}
 		selType.value = analysisType;
+
+		const typeHint = append(fType, $('div'));
+		typeHint.style.fontSize = 'var(--ma-font-xs, 11px)';
+		typeHint.style.color = 'var(--ma-muted, var(--vscode-descriptionForeground))';
+		typeHint.style.marginTop = '2px';
+
+		// Number of Modes (modal_frequency only)
+		const fModes = append(left, $('.ma-solver-field'));
+		append(fModes, $('label', undefined, localize('solver.modes', "Number of modes")));
+		const inpModes = append(fModes, $<HTMLInputElement>('input', {
+			type: 'number',
+			min: '1',
+			max: '100',
+			step: '1',
+			placeholder: '10'
+		}));
+		inpModes.value = typeof data.modes === 'number' ? String(data.modes) : '';
+
+		const modesError = append(fModes, $('div'));
+		modesError.style.fontSize = 'var(--ma-font-xs, 11px)';
+		modesError.style.color = 'var(--vscode-inputValidation-errorForeground, var(--vscode-editorError-foreground))';
+		modesError.style.display = 'none';
+
+		const clearModesError = (): void => {
+			modesError.textContent = '';
+			modesError.style.display = 'none';
+			inpModes.style.borderColor = '';
+		};
+
+		const updateAnalysisTypeUI = (): void => {
+			const selected = selType.value;
+			if (selected === 'modal_frequency') {
+				typeHint.textContent = localize('solver.modalHint', "Natural frequencies and mode shapes. Loads and gravity are not used; every material needs a density.");
+				typeHint.style.display = '';
+				fModes.style.display = '';
+			} else if (selected === 'static_linear') {
+				typeHint.textContent = localize('solver.staticHint', "Stresses and displacements under the loads.");
+				typeHint.style.display = '';
+				fModes.style.display = 'none';
+				clearModesError();
+			} else {
+				typeHint.textContent = '';
+				typeHint.style.display = 'none';
+				fModes.style.display = 'none';
+				clearModesError();
+			}
+		};
+		updateAnalysisTypeUI();
+
+		this.inputDisposables.add(addDisposableListener(selType, EventType.CHANGE, () => {
+			updateAnalysisTypeUI();
+		}));
+		this.inputDisposables.add(addDisposableListener(inpModes, EventType.INPUT, () => {
+			clearModesError();
+		}));
 
 		// Solver Executable
 		const fExe = append(left, $('.ma-solver-field'));
@@ -369,18 +426,58 @@ export class SolverEditor extends EditorPane {
 			if (!this.currentResource || !this.currentData) {
 				return;
 			}
+			const selectedType = selType.value;
+
+			let nextModes: number | undefined;
+			let shouldUpdateModes = false;
+			if (selectedType === 'modal_frequency') {
+				shouldUpdateModes = true;
+				if (inpModes.validity?.badInput) {
+					modesError.textContent = localize('solver.invalidModes', "Number of modes must be an integer between 1 and 100, or blank for 10.");
+					modesError.style.display = '';
+					inpModes.style.borderColor = 'var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground))';
+					return;
+				}
+				const rawModes = inpModes.value.trim();
+				if (rawModes === '') {
+					nextModes = undefined;
+				} else {
+					const parsedModes = Number(rawModes);
+					if (!Number.isInteger(parsedModes) || parsedModes < 1 || parsedModes > 100) {
+						modesError.textContent = localize('solver.invalidModes', "Number of modes must be an integer between 1 and 100, or blank for 10.");
+						modesError.style.display = '';
+						inpModes.style.borderColor = 'var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground))';
+						return;
+					}
+					nextModes = parsedModes;
+				}
+				clearModesError();
+			}
+
 			const rawThreads = inpThreads.value.trim();
-			if (rawThreads === '') {
-				delete this.currentData.threads;
-			} else {
+			let nextThreads: number | undefined;
+			if (rawThreads !== '') {
 				const parsedThreads = Number(rawThreads);
 				if (!Number.isInteger(parsedThreads) || parsedThreads < 1 || parsedThreads > 256) {
 					this.notificationService.error(localize('solver.invalidThreads', "Parallel threads must be an integer between 1 and 256, or blank for all cores."));
 					return;
 				}
-				this.currentData.threads = parsedThreads;
+				nextThreads = parsedThreads;
 			}
-			this.currentData.analysisType = selType.value;
+
+			if (nextThreads === undefined) {
+				delete this.currentData.threads;
+			} else {
+				this.currentData.threads = nextThreads;
+			}
+			if (shouldUpdateModes) {
+				if (nextModes === undefined) {
+					delete this.currentData.modes;
+				} else {
+					this.currentData.modes = nextModes;
+				}
+			}
+			this.currentData.analysisType = selectedType;
 
 			await this.fileService.writeFile(this.currentResource, VSBuffer.fromString(JSON.stringify(this.currentData, null, '\t')));
 			this.notificationService.info(localize('solver.configSaved', "Solver configuration saved."));
@@ -411,16 +508,26 @@ export class SolverEditor extends EditorPane {
 		const isRunning = this.currentStatus?.state === 'inProgress';
 		const isFailed = this.currentStatus?.state === 'failed';
 		const statusText = isStale ? 'converged (out of date)' : isConverged ? 'converged' : isRunning ? 'running' : isFailed ? 'failed' : 'not run';
+		const analysisType = data.analysisType ?? "static_linear";
+		const rows = [
+			{ name: localize('prop.engine', "Solver Engine"), value: `${data.solver ?? 'calculix'} (${data.executable ?? 'ccx'})` },
+			{ name: localize('prop.analysisType', "Analysis Step Type"), value: analysisType }
+		];
+		if (analysisType === 'modal_frequency') {
+			rows.push({
+				name: localize('prop.modes', "Number of Modes"),
+				value: typeof data.modes === 'number' ? String(data.modes) : localize('solver.modesDefaultValue', "10 (default)")
+			});
+		}
+		rows.push(
+			{ name: localize('prop.threads', "Parallel Threads"), value: typeof data.threads === 'number' ? String(data.threads) : localize('solver.allCores', "all cores") },
+			{ name: localize('prop.status', "Execution Status"), value: statusText }
+		);
 
 		this.propertiesDockService.setProperties({
 			title: localize('solver.propertiesTitle', "Solver Configuration"),
 			detail: data.solver ?? "CalculiX",
-			rows: [
-				{ name: localize('prop.engine', "Solver Engine"), value: `${data.solver ?? 'calculix'} (${data.executable ?? 'ccx'})` },
-				{ name: localize('prop.analysisType', "Analysis Step Type"), value: data.analysisType ?? "static_linear" },
-				{ name: localize('prop.threads', "Parallel Threads"), value: typeof data.threads === 'number' ? String(data.threads) : localize('solver.allCores', "all cores") },
-				{ name: localize('prop.status', "Execution Status"), value: statusText }
-			]
+			rows
 		});
 	}
 

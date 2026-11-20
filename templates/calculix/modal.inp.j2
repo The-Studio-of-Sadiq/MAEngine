@@ -15,13 +15,8 @@ Units: {{ project.units.value }}
 *MATERIAL, NAME={{ mat.name }}
 *ELASTIC
 {{ mat.elastic.youngs_modulus }}, {{ mat.elastic.poissons_ratio }}
-{% if mat.density is not none %}
 *DENSITY
 {{ mat.density }}
-{% else %}
-*DENSITY
-7.85e-9
-{% endif %}
 {% endfor %}
 **
 ** =============================================================
@@ -50,9 +45,10 @@ Units: {{ project.units.value }}
 {% if bc.type.value == "fixed" %}
 {{ bc.target_set }}, 1, 3, 0.0
 {% elif bc.type.value == "displacement" %}
-{% if bc.u1 is not none %}{{ bc.target_set }}, 1, 1, {{ bc.u1 }}{% endif %}
-{% if bc.u2 is not none %}{{ bc.target_set }}, 2, 2, {{ bc.u2 }}{% endif %}
-{% if bc.u3 is not none %}{{ bc.target_set }}, 3, 3, {{ bc.u3 }}{% endif %}
+{# one line per prescribed component; a block tag on its own line keeps the line breaks #}
+{% for dof, value in [(1, bc.u1), (2, bc.u2), (3, bc.u3)] if value is not none %}
+{{ bc.target_set }}, {{ dof }}, {{ dof }}, {{ value }}
+{% endfor %}
 {% endif %}
 {% endfor %}
 **
@@ -62,10 +58,6 @@ Units: {{ project.units.value }}
 U
 *EL FILE
 S, E
-*NODE PRINT, NSET=NALL
-U
-*EL PRINT, ELSET=EALL
-S
 *END STEP
 {% endfor %}
 

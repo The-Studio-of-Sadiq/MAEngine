@@ -25,6 +25,7 @@ import { MarketplaceEditorInput } from '../../maengineMarketplace/browser/market
 import { MaterialEditorInput } from '../../maengineMaterial/browser/materialEditorInput.js';
 import { MeshEditorInput } from '../../maengineMesh/browser/meshEditorInput.js';
 import { PhysicsEditorInput } from '../../maenginePhysics/browser/physicsEditorInput.js';
+import { ReportEditorInput } from '../../maengineReport/browser/reportEditorInput.js';
 import { ResultsEditorInput } from '../../maengineResults/browser/resultsEditorInput.js';
 import { SolverEditorInput } from '../../maengineSolver/browser/solverEditorInput.js';
 
@@ -172,6 +173,7 @@ export function isPartEditor(partId: string, editor: EditorInput | undefined): b
 		case 'physics': return editor.typeId === PhysicsEditorInput.ID;
 		case 'solver': return editor.typeId === SolverEditorInput.ID;
 		case 'results': return editor.typeId === ResultsEditorInput.ID;
+		case 'reports': return editor.typeId === ReportEditorInput.ID;
 		case 'marketplace': return editor.typeId === MarketplaceEditorInput.ID;
 		default: return false;
 	}
@@ -213,9 +215,7 @@ export async function openPart(project: IMechastudioProject, part: IProjectPart,
 			}
 			break;
 		case 'reports':
-			if (mainFileUri) {
-				await services.editorService.openEditor({ resource: mainFileUri, options: { pinned: true, preserveFocus } });
-			}
+			await services.editorService.openEditor(new ReportEditorInput(mainFileUri ?? joinPath(root, '09 Reports', 'reports.json')), { pinned: true, preserveFocus });
 			break;
 	}
 }
@@ -806,7 +806,7 @@ export function physicsProblems(physics: any, selectorNames: readonly string[], 
 	}
 	constraints.forEach((c, i) => {
 		const id = String(c?.id ?? `bc_${i + 1}`);
-		if (c?.type === 'fixed') {
+		if (c?.type === 'fixed' || c?.type === 'frictionless') {
 			checkSelector(localize('physics.constraint', "constraint"), id, c.selector);
 		} else if (c?.type === 'displacement') {
 			checkSelector(localize('physics.constraint', "constraint"), id, c.selector);
@@ -1057,8 +1057,8 @@ export async function resolveRunTarget(
 		}
 		const solver = await readJson(fileService, joinPath(root, part('solver').folder, part('solver').mainFile));
 		const analysis = solver?.analysisType ?? 'static_linear';
-		if (analysis !== 'static_linear') {
-			return fail(localize('run.analysis', "Only static linear analysis can run from a study yet"));
+		if (analysis !== 'static_linear' && analysis !== 'modal_frequency') {
+			return fail(localize('run.analysis', "Analysis type '{0}' cannot run from a study", String(analysis)));
 		}
 	}
 	return { kind: 'study', canRun: true, target: root };

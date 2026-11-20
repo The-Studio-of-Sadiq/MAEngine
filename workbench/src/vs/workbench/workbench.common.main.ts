@@ -264,6 +264,7 @@ import './contrib/maengineMesh/browser/maengineMesh.contribution.js';
 import './contrib/maenginePhysics/browser/maenginePhysics.contribution.js';
 import './contrib/maengineSolver/browser/maengineSolver.contribution.js';
 import './contrib/maengineResults/browser/maengineResults.contribution.js';
+import './contrib/maengineReport/browser/maengineReport.contribution.js';
 import './contrib/maengineMarketplace/browser/maengineMarketplace.contribution.js';
 
 // Logs

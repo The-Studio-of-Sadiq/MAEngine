@@ -54,6 +54,7 @@ PART_FILES = {
     "physics": ("05 Physics & BCs", "physics.json"),
     "solver": ("06 Solver", "solver.json"),
     "results": ("07 Results", "results.json"),
+    "reports": ("09 Reports", "reports.json"),
 }
 
 MESH_FILE_NAME = "model_mesh.inp"
@@ -385,6 +386,7 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         return target
 
     constraints = physics.get("constraints") if isinstance(physics.get("constraints"), list) else []
+    frictionless: List[Tuple[str, str]] = []  # resolved once the faces are known
     for i, c in enumerate(constraints):
         if not isinstance(c, dict):
             problems.append(f"Physics: constraint #{i + 1} is not an object.")
@@ -408,8 +410,14 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
                     u3=vals["uz"] if _is_number(vals["uz"]) else None,
                 ))
                 used_sets.append(target)
+        elif ctype == "frictionless":
+            # No motion normal to a flat face (also a symmetry plane); the face may slide in-plane.
+            if target:
+                frictionless.append((cid, target))
+                used_sets.append(target)
         else:
-            problems.append(f"Physics: constraint '{cid}' has type {ctype!r}; supported: 'fixed', 'displacement'.")
+            problems.append(f"Physics: constraint '{cid}' has type {ctype!r}; "
+                            "supported: 'fixed', 'displacement', 'frictionless'.")
     if not bcs and not any(p.startswith("Physics: constraint") for p in problems):
         problems.append("Physics: no supports are defined. Add at least one fixed constraint so the part cannot float.")
 
@@ -461,15 +469,25 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
                 gravity_set = True
                 loads.append(Load(name="gravity", type=LoadType.GRAVITY, target_set="EALL",
                                   magnitude=gmag, direction=[x / gmag for x in gvec]))
-    if not loads:
+    if not loads and solver.get("analysisType", "static_linear") != "modal_frequency":
         notes.append("No loads are applied; the solution will be zero displacement.")
 
     # ---- solver
     analysis = solver.get("analysisType", "static_linear")
-    if analysis != "static_linear":
+    num_modes = solver.get("modes", 10)
+    if analysis not in ("static_linear", "modal_frequency"):
         problems.append(
-            f"Solver: analysis type '{analysis}' cannot run from a study yet; only 'static_linear' is connected."
+            f"Solver: analysis type '{analysis}' cannot run from a study; supported: 'static_linear', 'modal_frequency'."
         )
+    elif analysis == "modal_frequency":
+        if not (isinstance(num_modes, int) and not isinstance(num_modes, bool) and 1 <= num_modes <= 100):
+            problems.append(f"Solver: modes must be a whole number from 1 to 100 (got {num_modes!r}).")
+        if loads:
+            notes.append("Modal analysis finds natural frequencies; the loads and gravity are not used.")
+        for bc in bcs:
+            if bc.type == BoundaryConditionType.DISPLACEMENT and any(v not in (None, 0, 0.0) for v in (bc.u1, bc.u2, bc.u3)):
+                problems.append(f"Physics: constraint '{bc.name}' prescribes a non-zero displacement, "
+                                "which a modal analysis cannot use (only zero components).")
 
     # ---- resolve selectors on the real CAD file (only when the rest is sane enough to matter)
     inspection: Optional[Dict[str, Any]] = None
@@ -494,6 +512,28 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
                     )
                 continue
             sets.append(EntitySet(name=sel["name"], entity_type="surface", cad_tag_indices=tags))
+
+    # ---- frictionless supports: the face normal must be a coordinate axis
+    if inspection is not None and frictionless:
+        boxes = {tag: box for tag, box in inspection["face_boxes"]}
+        size = max((inspection["bounds"][k + 3] - inspection["bounds"][k] for k in range(3)), default=1.0) or 1.0
+        for cid, target in frictionless:
+            axes = set()
+            for tag in inspection["faces"].get(target, []):
+                b = boxes.get(tag)
+                flat = [k for k in range(3) if b and abs(b[k + 3] - b[k]) <= 1e-6 * size]
+                axes.add(flat[0] if len(flat) == 1 else None)
+            if not axes:
+                continue  # the selector's own "picks no face" problem is already listed
+            if len(axes) != 1 or None in axes:
+                problems.append(f"Physics: frictionless support '{cid}' needs flat faces facing the same "
+                                f"coordinate direction (X, Y or Z); selector '{target}' picks others.")
+                continue
+            axis = axes.pop()
+            comps = {"u1": None, "u2": None, "u3": None}
+            comps[f"u{axis + 1}"] = 0.0
+            bcs.append(BoundaryCondition(name=cid, type=BoundaryConditionType.DISPLACEMENT, target_set=target, **comps))
+            notes.append(f"Frictionless support '{cid}' holds {'XYZ'[axis]} displacement at zero on '{target}'.")
 
     # ---- materials per body
     n_bodies = len(inspection["bodies"]) if inspection is not None else max(1, len(geo_bodies))
@@ -521,7 +561,11 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
     if unassigned and default_card is not None:
         notes.append(f"{unassigned} of {n_bodies} bodies have no material assigned and use "
                      f"'{default_card.get('name', default_card.get('id'))}'.")
-    if gravity_set and any(m.density is None for m in materials):
+    if analysis == "modal_frequency":
+        for m in materials:
+            if m.density is None:
+                problems.append(f"Materials: '{m.name}' needs a density (density_tonne_mm3) for modal analysis.")
+    elif gravity_set and any(m.density is None for m in materials):
         problems.append("Physics: gravity is set but a material in use has no density_tonne_mm3.")
     body_sections: Optional[List[Dict[str, str]]] = None
     if len(used_cards) > 1 and inspection is not None and len(body_cards) == n_bodies:
@@ -545,7 +589,9 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         materials=materials,
         sets=sets,
         mesh=mesh_config,
-        steps=[Step(name="Static_Step", type=StepType.STATIC_LINEAR, boundary_conditions=bcs, loads=loads)],
+        steps=[Step(name="Modal_Step", type=StepType.MODAL_FREQUENCY, num_modes=int(num_modes), boundary_conditions=bcs)]
+        if analysis == "modal_frequency" else
+        [Step(name="Static_Step", type=StepType.STATIC_LINEAR, boundary_conditions=bcs, loads=loads)],
     )
     context = {
         "study_dir": study_dir,
@@ -558,6 +604,7 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         "geometry": geometry,
         "mesh_part": mesh_part,
         "solver_part": solver,
+        "analysis": analysis,
     }
     return project, context
 
@@ -830,7 +877,237 @@ def solve_study(project: SimulationProject, context: Dict[str, Any]) -> Dict[str
     return {"pipeline": pipeline}
 
 
-def export_result_view(vtu_path: str, out_path: str) -> Dict[str, Any]:
+def read_dat_frequencies(dat_path: str) -> List[Dict[str, float]]:
+    """Natural frequencies from the CalculiX .dat eigenvalue table (mode number, Hz)."""
+    modes: List[Dict[str, float]] = []
+    in_table = False
+    with open(dat_path, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if "E I G E N V A L U E   O U T P U T" in line:
+                in_table, modes = True, []
+                continue
+            if in_table:
+                parts = line.split()
+                if len(parts) >= 4 and parts[0].isdigit():
+                    modes.append({"mode": int(parts[0]), "frequency_Hz": float(parts[3])})
+                elif modes and not parts:
+                    in_table = False
+    return modes
+
+
+def read_frd_mode_shapes(frd_path: str) -> List[Dict[int, List[float]]]:
+    """Each DISP block of a modal .frd in order (one per mode): node id -> [ux, uy, uz]."""
+    shapes: List[Dict[int, List[float]]] = []
+    current: Optional[Dict[int, List[float]]] = None
+    with open(frd_path, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if line.startswith(" -4"):
+                current = {} if "DISP" in line else None
+            elif line.startswith(" -3"):
+                if current is not None:
+                    shapes.append(current)
+                current = None
+            elif current is not None and line.startswith(" -1"):
+                vals = _frd_values(line)
+                if len(vals) >= 3:
+                    current[int(line[3:13])] = vals[:3]
+    return shapes
+
+
+REPORT_FILE_NAME = "report.html"
+
+
+def write_report(project: SimulationProject, context: Dict[str, Any], result: Dict[str, Any]) -> str:
+    """
+    Writes 09 Reports/report.html: a self-contained record of the run (inputs as the engine used
+    them, mesh, results, notes). Every number comes from the study files or the solver output.
+    """
+    import base64
+    import html as h
+
+    study_dir = context["study_dir"]
+    reports_dir = _part_dir(study_dir, "reports")
+    os.makedirs(reports_dir, exist_ok=True)
+
+    def esc(v: Any) -> str:
+        return h.escape(str(v))
+
+    def num(v: Any, unit: str = "") -> str:
+        return "n/a" if v is None else f"{float(v):.6g}{(' ' + unit) if unit else ''}"
+
+    def table(headers: List[str], rows: List[List[Any]]) -> str:
+        head = "".join(f"<th>{esc(x)}</th>" for x in headers)
+        body = "".join("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in r) + "</tr>" for r in rows)
+        return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+
+    geometry = context.get("geometry") or {}
+    mesh: Dict[str, Any] = {}
+    try:
+        with open(_part_path(study_dir, "mesh"), "r", encoding="utf-8") as f:
+            mesh = json.load(f)
+    except (OSError, ValueError):
+        pass
+    step = project.steps[0]
+    modal = context.get("analysis") == "modal_frequency"
+    sections: List[str] = []
+
+    sections.append("<h2>Model</h2>" + table(["Item", "Value"], [
+        ["CAD file", os.path.basename(project.cad_file or "")],
+        ["Bodies", len((context.get("inspection") or {}).get("bodies", []))],
+        ["Units", "mm, N, MPa, tonne, s"],
+        ["Analysis", "Modal (natural frequencies)" if modal else "Linear static"],
+    ]))
+    mat_rows = []
+    for c in context.get("material_cards") or []:
+        rho = c.get("density_tonne_mm3")
+        mat_rows.append([c.get("name", c.get("id")), num(c.get("elasticModulus_MPa"), "MPa"), num(c.get("poissonsRatio")),
+                         num(rho * 1e12 if _is_number(rho) else None, "kg/m³"), num(c.get("yieldStrength_MPa"), "MPa")])
+    sections.append("<h2>Materials</h2>" + table(
+        ["Material", "Young's modulus", "Poisson's ratio", "Density", "Yield strength"], mat_rows))
+    bodies = geometry.get("bodies") if isinstance(geometry.get("bodies"), list) else []
+    if bodies:
+        sections.append("<h3>Body assignments</h3>" + table(["Body", "Volume", "Material"], [
+            [b.get("name"), num(b.get("volume_mm3"), "mm³"), b.get("material") or "(default card)"]
+            for b in bodies if isinstance(b, dict)]))
+    sel_rows = [[st.name, ", ".join(str(t) for t in st.cad_tag_indices)] for st in project.sets]
+    sections.append("<h2>Face selectors</h2>" + (table(["Selector", "CAD faces"], sel_rows) if sel_rows else "<p>None.</p>"))
+    q = mesh.get("quality") or {}
+    order = "quadratic (10-node tetrahedra)" if project.mesh.element_order == 2 else "linear (4-node tetrahedra)"
+    sections.append("<h2>Mesh</h2>" + table(["Item", "Value"], [
+        ["Nodes", mesh.get("nodeCount", "n/a")], ["Elements", mesh.get("elementCount", "n/a")],
+        ["Element order", order],
+        ["Size range", f"{project.mesh.min_size:g} to {project.mesh.max_size:g} mm"],
+        ["Min / mean element quality (SICN)", f"{num(q.get('min'))} / {num(q.get('mean'))}" if q else "n/a"],
+    ]))
+    bc_rows = []
+    for bc in step.boundary_conditions:
+        if bc.type == BoundaryConditionType.FIXED:
+            what = "all displacements zero"
+        else:
+            what = ", ".join(f"u{'xyz'[k]} = {v:g} mm" for k, v in enumerate((bc.u1, bc.u2, bc.u3)) if v is not None)
+        bc_rows.append([bc.name, bc.target_set, what])
+    sections.append("<h2>Supports</h2>" + table(["Support", "Selector", "Constraint"], bc_rows))
+    if not modal:
+        load_rows = []
+        for ld in step.loads:
+            if ld.type == LoadType.PRESSURE:
+                load_rows.append([ld.name, ld.target_set, f"pressure {ld.magnitude:g} MPa"])
+            elif ld.type == LoadType.GRAVITY:
+                load_rows.append([ld.name, "all bodies", f"{ld.magnitude:g} mm/s² along {[round(x, 4) for x in ld.direction]}"])
+            else:
+                load_rows.append([ld.name, ld.target_set, f"{ld.magnitude:g} N along {[round(x, 4) for x in ld.direction]}"])
+        sections.append("<h2>Loads</h2>" + (table(["Load", "Applied to", "Value"], load_rows) if load_rows else "<p>None.</p>"))
+
+    summary = result.get("summary") or {}
+    if modal:
+        sections.append("<h2>Natural frequencies</h2>" + table(["Mode", "Frequency"], [
+            [m["mode"], num(m["frequency_Hz"], "Hz")] for m in summary.get("modes", [])]))
+    else:
+        rows = [["Max von Mises stress", num(summary.get("maxVonMises_MPa"), "MPa")],
+                ["Max displacement", num(summary.get("maxDisplacement_mm"), "mm")],
+                ["Min factor of safety (yield / max von Mises)", num(summary.get("minSafetyFactor"))]]
+        for name, f in (summary.get("reactionForces_N") or {}).items():
+            rows.append([f"Reaction on {name}", "[" + ", ".join(f"{x:.6g}" for x in f) + "] N"])
+        sections.append("<h2>Results</h2>" + table(["Quantity", "Value"], rows))
+        image = result.get("imageFile")
+        image_path = os.path.join(_part_dir(study_dir, "results"), image) if image else None
+        if image_path and os.path.exists(image_path):
+            with open(image_path, "rb") as f:
+                data = base64.b64encode(f.read()).decode("ascii")
+            sections.append(f'<figure><img alt="von Mises stress contour" src="data:image/png;base64,{data}">'
+                            "<figcaption>von Mises stress (MPa) on the deformed shape (true scale).</figcaption></figure>")
+    notes = context.get("notes") or []
+    if notes:
+        sections.append("<h2>Notes</h2><ul>" + "".join(f"<li>{esc(n)}</li>" for n in notes) + "</ul>")
+
+    title = f"{project.name}: {'modal' if modal else 'static'} analysis report"
+    style = (
+        'body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;margin:32px auto;max-width:880px;'
+        'padding:0 16px;color:#1d2330;background:#fff}'
+        'h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:28px 0 8px;border-bottom:1px solid #d9dee7;'
+        'padding-bottom:4px}h3{font-size:14px;margin:16px 0 6px}'
+        'table{border-collapse:collapse;width:100%;margin:4px 0}th,td{text-align:left;padding:5px 8px;'
+        'border-bottom:1px solid #e6e9ef;vertical-align:top}th{background:#f4f6f9;font-weight:600}'
+        '.meta,figcaption{color:#5b6475}figcaption{font-size:12px}img{max-width:100%;border:1px solid #e6e9ef}'
+        '@media (prefers-color-scheme: dark){body{background:#1e1f22;color:#e3e6ec}th{background:#2a2c31}'
+        'th,td,h2{border-color:#33363c}.meta,figcaption{color:#a0a7b4}}'
+    )
+    page = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        f"<title>{esc(title)}</title><style>{style}</style></head><body>"
+        f"<h1>{esc(title)}</h1>"
+        f'<p class="meta">Study folder: {esc(os.path.basename(study_dir))} · Solved {esc(result.get("solvedAt", ""))}'
+        " · CalculiX via MAEngine</p>"
+        + "".join(sections) + "</body></html>"
+    )
+    out = os.path.join(reports_dir, REPORT_FILE_NAME)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(page)
+    _update_part(study_dir, "reports", {"exports": [REPORT_FILE_NAME], "report": REPORT_FILE_NAME, "generatedAt": _now()})
+    _log(f"[+] Report written to {os.path.relpath(out, study_dir)}")
+    return out
+
+
+def post_modal(project: SimulationProject, context: Dict[str, Any], pipeline) -> Dict[str, Any]:
+    """Frequencies and mode shapes of a modal run into 07 Results (no stresses: mode shapes are
+    mass-normalised, so their stress values have no physical size)."""
+    import numpy as np
+    from maengine.solvers.calculix.reader import CalculixResultReader
+
+    study_dir = context["study_dir"]
+    job = project.name
+    results_dir = _part_dir(study_dir, "results")
+    os.makedirs(results_dir, exist_ok=True)
+    dat_path = os.path.splitext(pipeline.frd_path)[0] + ".dat"
+    modes = read_dat_frequencies(dat_path) if os.path.exists(dat_path) else []
+    if not modes:
+        raise RuntimeError("CalculiX wrote no eigenvalue table; the modal run found no frequencies.")
+    shapes = read_frd_mode_shapes(pipeline.frd_path)
+
+    reader = CalculixResultReader(pipeline.frd_path)
+    reader.vtu_path = os.path.join(results_dir, f"{job}.vtu")
+    reader.convert_to_vtu(overwrite=True)
+    import pyvista as pv
+    grid = pv.read(reader.vtu_path)
+    # The reader indexes points by sorted node id.
+    nids = sorted(shapes[0]) if shapes else []
+    if shapes and len(nids) == grid.n_points:
+        for k, shape in enumerate(shapes[:len(modes)]):
+            grid.point_data[f"MODE_{k + 1}"] = np.array([shape.get(n, [0.0, 0.0, 0.0]) for n in nids], dtype=float)
+        for name in ("DISP", "DISP_MAG", "STRESS", "STRESS_VM"):
+            if name in grid.point_data:
+                del grid.point_data[name]
+        grid.save(reader.vtu_path)
+
+    files = {"resultFile": f"{job}.vtu"}
+    try:
+        view_name = f"{job}_view.json"
+        export_result_view(reader.vtu_path, os.path.join(results_dir, view_name), modes=modes)
+        files["viewFile"] = view_name
+    except Exception as e:
+        _log(f"[!] Results view export skipped: {e}")
+
+    result = {
+        "hasResults": True,
+        "analysisType": "modal_frequency",
+        **files,
+        "summary": {"modes": [{"mode": m["mode"], "frequency_Hz": float(f"{m['frequency_Hz']:.6g}")} for m in modes]},
+        "material": [c.get("id") for c in context.get("material_cards") or []],
+        "job": job,
+        "solvedAt": _now(),
+    }
+    _update_part(study_dir, "results", result, remove=("gltfFile", "imageFile"))
+    try:
+        write_report(project, context, result)
+    except Exception as e:
+        _log(f"[!] Report not written: {e}")
+    _log(f"[+] Natural frequencies written to {os.path.relpath(results_dir, study_dir)}:")
+    for m in modes:
+        _log(f"    - Mode {m['mode']}: {m['frequency_Hz']:.6g} Hz")
+    return result
+
+
+def export_result_view(vtu_path: str, out_path: str, modes: Optional[List[Dict[str, float]]] = None) -> Dict[str, Any]:
     """
     Writes the outer surface of the result mesh for the app's 3D results viewer as JSON: node
     positions, triangles, nodal displacement and nodal fields (von Mises, displacement magnitude
@@ -840,33 +1117,46 @@ def export_result_view(vtu_path: str, out_path: str) -> Dict[str, Any]:
     import pyvista as pv
 
     grid = pv.read(vtu_path)
-    surf = grid.extract_surface(nonlinear_subdivision=0, pass_pointid=True, algorithm="dataset_surface").triangulate()
-    ids = np.asarray(surf.point_data["vtkOriginalPointIds"], dtype=np.int64)
+    # The surface filter carries every point array onto its own points. (Its vtkOriginalPointIds
+    # did not map back to the right nodes for these grids, so the fields are read from it directly.)
+    surf = grid.extract_surface(nonlinear_subdivision=0, algorithm="dataset_surface").triangulate()
     faces = np.asarray(surf.faces).reshape(-1, 4)[:, 1:]
 
     def flat(a: Any) -> List[float]:
         return [float(f"{v:.6g}") for v in np.asarray(a, dtype=float).ravel()]
 
     fields: Dict[str, Any] = {}
-    pd = grid.point_data
+    pd = surf.point_data
     if "STRESS_VM" in pd:
-        fields["von_mises"] = {"label": "von Mises stress", "unit": "MPa", "values": flat(pd["STRESS_VM"][ids])}
+        fields["von_mises"] = {"label": "von Mises stress", "unit": "MPa", "values": flat(pd["STRESS_VM"])}
     if "DISP_MAG" in pd:
-        fields["disp_mag"] = {"label": "Total displacement", "unit": "mm", "values": flat(pd["DISP_MAG"][ids])}
+        fields["disp_mag"] = {"label": "Total displacement", "unit": "mm", "values": flat(pd["DISP_MAG"])}
     if "DISP" in pd:
         for k, name in enumerate(("ux", "uy", "uz")):
-            fields[name] = {"label": f"Displacement {name[1].upper()}", "unit": "mm", "values": flat(pd["DISP"][ids, k])}
+            fields[name] = {"label": f"Displacement {name[1].upper()}", "unit": "mm", "values": flat(pd["DISP"][:, k])}
     if "STRESS" in pd and pd["STRESS"].shape[1] == 6:
         # CalculiX order: xx, yy, zz, xy, yz, zx
         for k, name in enumerate(("sxx", "syy", "szz", "sxy", "syz", "szx")):
-            fields[name] = {"label": f"Stress {name[1:].upper()}", "unit": "MPa", "values": flat(pd["STRESS"][ids, k])}
+            fields[name] = {"label": f"Stress {name[1:].upper()}", "unit": "MPa", "values": flat(pd["STRESS"][:, k])}
 
+    mode_views = []
+    for m in modes or []:
+        key = f"MODE_{m['mode']}"
+        if key in pd:
+            shape = pd[key]
+            mode_views.append({"mode": m["mode"], "frequency_Hz": m["frequency_Hz"], "displacement": flat(shape)})
+            fields[f"mode_{m['mode']}"] = {
+                "label": f"Mode {m['mode']} ({m['frequency_Hz']:.4g} Hz) relative displacement",
+                "unit": "", "values": flat(np.linalg.norm(shape, axis=1)),
+            }
     view = {
         "schema": 1,
+        "analysisType": "modal_frequency" if mode_views else "static_linear",
+        "modes": mode_views or None,
         "units": {"length": "mm"},
         "positions": flat(surf.points),
         "triangles": [int(v) for v in faces.ravel()],
-        "displacement": flat(pd["DISP"][ids]) if "DISP" in pd else None,
+        "displacement": flat(pd["DISP"]) if "DISP" in pd else (mode_views[0]["displacement"] if mode_views else None),
         "fields": fields,
     }
     with open(out_path, "w", encoding="utf-8") as f:
@@ -952,6 +1242,10 @@ def post_study(project: SimulationProject, context: Dict[str, Any], pipeline) ->
         "solvedAt": _now(),
     }
     _update_part(study_dir, "results", result)
+    try:
+        write_report(project, context, result)
+    except Exception as e:
+        _log(f"[!] Report not written: {e}")
     _log(f"[+] Results written to {os.path.relpath(results_dir, study_dir)}:")
     _log(f"    - Max von Mises:    {max_vm:.4f} MPa")
     _log(f"    - Max displacement: {summary.get('max_displacement'):.6f} mm")
@@ -1019,7 +1313,10 @@ def run_project(study_dir: str, stage: str = "run") -> int:
         else:
             _log("[*] Reusing the current mesh in '04 Mesh'.")
         solved = solve_study(project, context)
-        post_study(project, context, solved["pipeline"])
+        if context.get("analysis") == "modal_frequency":
+            post_modal(project, context, solved["pipeline"])
+        else:
+            post_study(project, context, solved["pipeline"])
     except Exception as e:
         solver_json = _part_path(study_dir, "solver")
         try:

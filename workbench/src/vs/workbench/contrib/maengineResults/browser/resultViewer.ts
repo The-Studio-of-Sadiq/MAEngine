@@ -13,12 +13,20 @@ export interface IResultField {
 	readonly values: readonly number[];
 }
 
+export interface IResultViewMode {
+	readonly mode: number;
+	readonly frequency_Hz: number;
+	readonly displacement: readonly number[];
+}
+
 export interface IResultViewData {
 	readonly schema: number;
+	readonly analysisType?: string;
 	readonly units?: { readonly length?: string };
 	readonly positions: readonly number[];
 	readonly triangles: readonly number[];
 	readonly displacement: readonly number[] | null;
+	readonly modes?: readonly IResultViewMode[];
 	readonly fields: Readonly<Record<string, IResultField>>;
 }
 
@@ -41,6 +49,7 @@ export interface IResultViewerState {
 	readonly scaleMode: DeformationScaleMode;
 	readonly hasDisplacement: boolean;
 	readonly edgesVisible: boolean;
+	readonly animating: boolean;
 }
 
 interface IParsedField {
@@ -169,11 +178,38 @@ export function parseResultViewData(raw: unknown): IResultViewData | undefined {
 	}
 	const triangles = raw.triangles;
 
+	const analysisType = typeof raw.analysisType === 'string' ? raw.analysisType : undefined;
+
+	const parsedModes: IResultViewMode[] = [];
+	if (Array.isArray(raw.modes)) {
+		for (const entry of raw.modes) {
+			if (
+				isRecord(entry) &&
+				typeof entry.mode === 'number' &&
+				Number.isInteger(entry.mode) &&
+				entry.mode > 0 &&
+				typeof entry.frequency_Hz === 'number' &&
+				Number.isFinite(entry.frequency_Hz) &&
+				isFiniteNumberArray(entry.displacement) &&
+				entry.displacement.length === raw.positions.length
+			) {
+				parsedModes.push({
+					mode: entry.mode,
+					frequency_Hz: entry.frequency_Hz,
+					displacement: entry.displacement,
+				});
+			}
+		}
+	}
+
 	let displacement: readonly number[] | null = null;
 	if (raw.displacement !== null && raw.displacement !== undefined) {
 		if (isFiniteNumberArray(raw.displacement) && raw.displacement.length === raw.positions.length) {
 			displacement = raw.displacement;
 		}
+	}
+	if (displacement === null && parsedModes.length > 0) {
+		displacement = parsedModes[0].displacement;
 	}
 
 	if (!isRecord(raw.fields)) {
@@ -211,10 +247,12 @@ export function parseResultViewData(raw: unknown): IResultViewData | undefined {
 
 	return {
 		schema: typeof raw.schema === 'number' ? raw.schema : 1,
+		analysisType,
 		units,
 		positions: raw.positions,
 		triangles,
 		displacement,
+		modes: parsedModes.length > 0 ? parsedModes : undefined,
 		fields,
 	};
 }
@@ -842,27 +880,37 @@ export class ResultViewer extends Disposable {
 		);
 	}
 
+	private static readonly ANIMATION_PERIOD_MS = 1600;
+
 	private readonly tooltip: HTMLElement;
 	private readonly nodeCount: number;
 	private readonly triCount: number;
 	private readonly indexGlType: number;
+	private readonly isModal: boolean;
 
 	private readonly basePositions: Float32Array;
+	private readonly baseDiag: number;
 	private readonly deformedPositions: Float32Array;
 	private readonly normals: Float32Array;
 	private readonly colors: Float32Array;
-	private readonly displacement: Float32Array | null;
+	private displacement: Float32Array | null;
 	private readonly indices: Uint16Array | Uint32Array;
 
 	private readonly fields = new Map<string, IParsedField>();
 	private readonly fieldOrder: IResultViewerFieldInfo[] = [];
 	private activeFieldId: string;
 
-	private readonly autoScale: number;
+	private autoScale: number;
 	private scaleMode: DeformationScaleMode;
 	private customScale = 1;
 	private activeScale = 0;
 	private edgesVisible = false;
+	private animating = false;
+	private animRaf = 0;
+	private animStartTime: number | undefined;
+	private animPhase = 1;
+	private hostVisible = true;
+	private isIntersecting = true;
 
 	private readonly positionBuffer: WebGLBuffer;
 	private readonly normalBuffer: WebGLBuffer;
@@ -936,6 +984,7 @@ export class ResultViewer extends Disposable {
 		this.nodeCount = data.positions.length / 3;
 		this.triCount = data.triangles.length / 3;
 		this.indexGlType = useUint32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+		this.isModal = data.analysisType === 'modal_frequency';
 
 		this.basePositions = new Float32Array(data.positions);
 		this.deformedPositions = new Float32Array(data.positions.length);
@@ -976,20 +1025,9 @@ export class ResultViewer extends Disposable {
 			if (y > maxY) { maxY = y; }
 			if (z > maxZ) { maxZ = z; }
 		}
-		const baseDiag = Math.hypot(maxX - minX, maxY - minY, maxZ - minZ);
+		this.baseDiag = Math.hypot(maxX - minX, maxY - minY, maxZ - minZ);
 
-		let maxDisp = 0;
-		if (this.displacement) {
-			for (let i = 0; i < this.nodeCount; i++) {
-				const p = i * 3;
-				const d = Math.hypot(this.displacement[p], this.displacement[p + 1], this.displacement[p + 2]);
-				if (d > maxDisp) {
-					maxDisp = d;
-				}
-			}
-		}
-
-		this.autoScale = (this.displacement && maxDisp > 0 && baseDiag > 0) ? (0.05 * baseDiag) / maxDisp : 0;
+		this.autoScale = this.computeAutoScale();
 		this.scaleMode = this.displacement ? 'auto' : 'undeformed';
 		this.activeScale = this.scaleMode === 'auto' ? this.autoScale : 0;
 
@@ -1024,7 +1062,8 @@ export class ResultViewer extends Disposable {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, this.colors.byteLength, gl.DYNAMIC_DRAW);
 
-		this.updateDeformedGeometry(false);
+		this.updateDeformedBounds();
+		this.updateDeformedGeometry(false, this.activeScale);
 		this.updateFieldColors(false);
 		this.fitToModel();
 		this.refreshTheme();
@@ -1054,6 +1093,7 @@ export class ResultViewer extends Disposable {
 			scaleMode: this.scaleMode,
 			hasDisplacement: this.displacement !== null,
 			edgesVisible: this.edgesVisible,
+			animating: this.animating,
 		};
 	}
 
@@ -1066,6 +1106,69 @@ export class ResultViewer extends Disposable {
 		this.hideProbeTooltip();
 		this.emitState();
 		this.requestRender();
+	}
+
+	setDisplacement(values: Float32Array | readonly number[]): void {
+		if (this.isDisposed || values.length !== this.basePositions.length) {
+			return;
+		}
+		if (this.displacement) {
+			this.displacement.set(values);
+		} else {
+			this.displacement = new Float32Array(values);
+		}
+
+		const prevScale = this.activeScale;
+		this.autoScale = this.computeAutoScale();
+		if (this.scaleMode === 'auto') {
+			this.activeScale = this.autoScale;
+		} else if (this.scaleMode === 'undeformed') {
+			this.activeScale = 0;
+		} else if (this.scaleMode === 'true') {
+			this.activeScale = 1;
+		} else {
+			this.activeScale = this.customScale;
+		}
+
+		this.updateDeformedBounds();
+		if (prevScale !== 0 || this.activeScale !== 0) {
+			this.updateDeformedGeometry(true, this.getCurrentDisplayScale());
+		}
+		this.hideProbeTooltip();
+		this.emitState();
+		this.syncAnimationLoop();
+		if (this.animRaf === 0) {
+			this.requestRender();
+		}
+	}
+
+	setAnimate(on: boolean): void {
+		if (this.isDisposed || this.animating === on) {
+			return;
+		}
+		this.animating = on;
+		if (on) {
+			this.animStartTime = undefined;
+			this.animPhase = 0;
+			this.updateDeformedBounds();
+			this.syncAnimationLoop();
+		} else {
+			this.stopAnimationLoop();
+			this.animPhase = 1;
+			this.updateDeformedBounds();
+			this.updateDeformedGeometry(true, this.activeScale);
+			this.hideProbeTooltip();
+			this.requestRender();
+		}
+		this.emitState();
+	}
+
+	setVisible(visible: boolean): void {
+		if (this.isDisposed || this.hostVisible === visible) {
+			return;
+		}
+		this.hostVisible = visible;
+		this.syncAnimationLoop();
 	}
 
 	setDeformationScale(mode: DeformationScaleMode, customScale?: number): void {
@@ -1094,10 +1197,14 @@ export class ResultViewer extends Disposable {
 		}
 
 		this.activeScale = nextScale;
-		this.updateDeformedGeometry(true);
+		this.updateDeformedBounds();
+		this.updateDeformedGeometry(true, this.getCurrentDisplayScale());
 		this.hideProbeTooltip();
 		this.emitState();
-		this.requestRender();
+		this.syncAnimationLoop();
+		if (this.animRaf === 0) {
+			this.requestRender();
+		}
 	}
 
 	setEdgesVisible(visible: boolean): void {
@@ -1141,6 +1248,9 @@ export class ResultViewer extends Disposable {
 		const width = Math.max(0, rect.width);
 		const height = Math.max(0, rect.height);
 		if (width <= 0 || height <= 0) {
+			this.cssWidth = width;
+			this.cssHeight = height;
+			this.syncAnimationLoop();
 			return;
 		}
 
@@ -1157,11 +1267,14 @@ export class ResultViewer extends Disposable {
 			this.canvas.height = pixelH;
 		}
 
+		this.syncAnimationLoop();
 		if (!this.hasFittedWithValidSize) {
 			this.fitToModel();
 			return;
 		}
-		this.requestRender();
+		if (this.animRaf === 0) {
+			this.requestRender();
+		}
 	}
 
 	refreshTheme(): void {
@@ -1182,9 +1295,160 @@ export class ResultViewer extends Disposable {
 		this.onStateChange?.(this.getState());
 	}
 
-	private updateDeformedGeometry(upload: boolean): void {
+	private computeAutoScale(): number {
+		const disp = this.displacement;
+		if (!disp || this.baseDiag <= 0) {
+			return 0;
+		}
+		let maxDisp = 0;
+		for (let i = 0; i < this.nodeCount; i++) {
+			const p = i * 3;
+			const d = Math.hypot(disp[p], disp[p + 1], disp[p + 2]);
+			if (Number.isFinite(d) && d > maxDisp) {
+				maxDisp = d;
+			}
+		}
+		return maxDisp > 0 ? (0.05 * this.baseDiag) / maxDisp : 0;
+	}
+
+	private getCurrentDisplayScale(): number {
+		return this.animating ? this.activeScale * this.animPhase : this.activeScale;
+	}
+
+	private shouldRunAnimation(): boolean {
+		if (
+			this.isDisposed ||
+			!this.animating ||
+			!this.displacement ||
+			this.activeScale === 0 ||
+			!this.hostVisible ||
+			!this.isIntersecting ||
+			this.cssWidth <= 0 ||
+			this.cssHeight <= 0 ||
+			!this.stageElement.isConnected ||
+			this.gl.isContextLost()
+		) {
+			return false;
+		}
+		return !getWindow(this.stageElement).document.hidden;
+	}
+
+	private stopAnimationLoop(): void {
+		if (this.animRaf !== 0) {
+			getWindow(this.stageElement).cancelAnimationFrame(this.animRaf);
+			this.animRaf = 0;
+		}
+		this.animStartTime = undefined;
+	}
+
+	private syncAnimationLoop(): void {
+		if (this.shouldRunAnimation()) {
+			if (this.animRaf === 0) {
+				this.animStartTime = undefined;
+				this.animRaf = getWindow(this.stageElement).requestAnimationFrame(this.onAnimationFrame);
+			}
+		} else {
+			this.stopAnimationLoop();
+		}
+	}
+
+	private readonly onAnimationFrame = (timestamp: number): void => {
+		this.animRaf = 0;
+		if (!this.shouldRunAnimation()) {
+			return;
+		}
+		if (this.animStartTime === undefined) {
+			this.animStartTime = timestamp;
+		}
+		const elapsedMs = Math.max(0, timestamp - this.animStartTime);
+		this.animPhase = Math.sin((2 * Math.PI * elapsedMs) / ResultViewer.ANIMATION_PERIOD_MS);
+		this.updateDeformedGeometry(true, this.activeScale * this.animPhase);
+
+		if (this.renderRaf !== 0) {
+			getWindow(this.stageElement).cancelAnimationFrame(this.renderRaf);
+			this.renderRaf = 0;
+		}
+		this.renderFrame();
+
+		if (this.shouldRunAnimation()) {
+			this.animRaf = getWindow(this.stageElement).requestAnimationFrame(this.onAnimationFrame);
+		}
+	};
+
+	private updateDeformedBounds(): void {
 		const disp = this.displacement;
 		const scale = this.activeScale;
+		let minX = Infinity;
+		let minY = Infinity;
+		let minZ = Infinity;
+		let maxX = -Infinity;
+		let maxY = -Infinity;
+		let maxZ = -Infinity;
+
+		if (!disp || scale === 0) {
+			for (let i = 0; i < this.nodeCount; i++) {
+				const p = i * 3;
+				const x = this.basePositions[p];
+				const y = this.basePositions[p + 1];
+				const z = this.basePositions[p + 2];
+				if (x < minX) { minX = x; }
+				if (y < minY) { minY = y; }
+				if (z < minZ) { minZ = z; }
+				if (x > maxX) { maxX = x; }
+				if (y > maxY) { maxY = y; }
+				if (z > maxZ) { maxZ = z; }
+			}
+		} else if (!this.animating) {
+			for (let i = 0; i < this.nodeCount; i++) {
+				const p = i * 3;
+				const x = this.basePositions[p] + scale * disp[p];
+				const y = this.basePositions[p + 1] + scale * disp[p + 1];
+				const z = this.basePositions[p + 2] + scale * disp[p + 2];
+				if (x < minX) { minX = x; }
+				if (y < minY) { minY = y; }
+				if (z < minZ) { minZ = z; }
+				if (x > maxX) { maxX = x; }
+				if (y > maxY) { maxY = y; }
+				if (z > maxZ) { maxZ = z; }
+			}
+		} else {
+			for (let i = 0; i < this.nodeCount; i++) {
+				const p = i * 3;
+				const bx = this.basePositions[p];
+				const by = this.basePositions[p + 1];
+				const bz = this.basePositions[p + 2];
+				const dx = scale * disp[p];
+				const dy = scale * disp[p + 1];
+				const dz = scale * disp[p + 2];
+				const xPlus = bx + dx;
+				const xMinus = bx - dx;
+				const yPlus = by + dy;
+				const yMinus = by - dy;
+				const zPlus = bz + dz;
+				const zMinus = bz - dz;
+				if (xPlus < minX) { minX = xPlus; }
+				if (xMinus < minX) { minX = xMinus; }
+				if (yPlus < minY) { minY = yPlus; }
+				if (yMinus < minY) { minY = yMinus; }
+				if (zPlus < minZ) { minZ = zPlus; }
+				if (zMinus < minZ) { minZ = zMinus; }
+				if (xPlus > maxX) { maxX = xPlus; }
+				if (xMinus > maxX) { maxX = xMinus; }
+				if (yPlus > maxY) { maxY = yPlus; }
+				if (yMinus > maxY) { maxY = yMinus; }
+				if (zPlus > maxZ) { maxZ = zPlus; }
+				if (zMinus > maxZ) { maxZ = zMinus; }
+			}
+		}
+
+		this.deformedCenterX = 0.5 * (minX + maxX);
+		this.deformedCenterY = 0.5 * (minY + maxY);
+		this.deformedCenterZ = 0.5 * (minZ + maxZ);
+		this.deformedRadius = Math.max(0.5 * Math.hypot(maxX - minX, maxY - minY, maxZ - minZ), 1e-3);
+	}
+
+	private updateDeformedGeometry(upload: boolean, scale: number = this.activeScale): void {
+		const disp = this.displacement;
 		if (disp && scale !== 0) {
 			for (let i = 0; i < this.basePositions.length; i++) {
 				this.deformedPositions[i] = this.basePositions[i] + scale * disp[i];
@@ -1192,29 +1456,6 @@ export class ResultViewer extends Disposable {
 		} else {
 			this.deformedPositions.set(this.basePositions);
 		}
-
-		let minX = Infinity;
-		let minY = Infinity;
-		let minZ = Infinity;
-		let maxX = -Infinity;
-		let maxY = -Infinity;
-		let maxZ = -Infinity;
-		for (let i = 0; i < this.nodeCount; i++) {
-			const p = i * 3;
-			const x = this.deformedPositions[p];
-			const y = this.deformedPositions[p + 1];
-			const z = this.deformedPositions[p + 2];
-			if (x < minX) { minX = x; }
-			if (y < minY) { minY = y; }
-			if (z < minZ) { minZ = z; }
-			if (x > maxX) { maxX = x; }
-			if (y > maxY) { maxY = y; }
-			if (z > maxZ) { maxZ = z; }
-		}
-		this.deformedCenterX = 0.5 * (minX + maxX);
-		this.deformedCenterY = 0.5 * (minY + maxY);
-		this.deformedCenterZ = 0.5 * (minZ + maxZ);
-		this.deformedRadius = Math.max(0.5 * Math.hypot(maxX - minX, maxY - minY, maxZ - minZ), 1e-3);
 
 		this.recomputeNormals();
 		this.bvhDirty = true;
@@ -1450,6 +1691,24 @@ export class ResultViewer extends Disposable {
 			e.preventDefault();
 			this.cancelPendingFrames();
 		}));
+
+		const targetWindow = getWindow(this.stageElement);
+		this._register(addDisposableListener(targetWindow.document, 'visibilitychange', () => {
+			this.syncAnimationLoop();
+		}));
+
+		const ObserverCtor = targetWindow.IntersectionObserver;
+		if (typeof ObserverCtor === 'function') {
+			const observer = new ObserverCtor(entries => {
+				const last = entries[entries.length - 1];
+				if (last) {
+					this.isIntersecting = last.isIntersecting;
+					this.syncAnimationLoop();
+				}
+			});
+			observer.observe(this.stageElement);
+			this._register(toDisposable(() => observer.disconnect()));
+		}
 	}
 
 	private getCameraBasis(): {
@@ -1586,8 +1845,16 @@ export class ResultViewer extends Disposable {
 		}
 
 		const formatted = formatResultNumber(value);
-		const valueText = field.unit ? `${formatted} ${field.unit}` : formatted;
-		this.tooltip.textContent = `${field.label}: ${valueText}`;
+		let label = field.label;
+		let valueText = field.unit ? `${formatted} ${field.unit}` : formatted;
+		if (this.isModal) {
+			const match = /^mode_(\d+)$/.exec(field.id);
+			if (match) {
+				label = localize('results.modalFieldLabel', "Mode {0} shape (relative)", match[1]);
+			}
+			valueText = formatted;
+		}
+		this.tooltip.textContent = `${label}: ${valueText}`;
 		this.tooltip.style.display = 'block';
 
 		const tipW = this.tooltip.offsetWidth;
@@ -1605,7 +1872,7 @@ export class ResultViewer extends Disposable {
 	}
 
 	private requestRender(): void {
-		if (this.renderRaf !== 0 || this.isDisposed) {
+		if (this.renderRaf !== 0 || this.animRaf !== 0 || this.isDisposed) {
 			return;
 		}
 		const targetWindow = getWindow(this.stageElement);
@@ -1733,6 +2000,7 @@ export class ResultViewer extends Disposable {
 			targetWindow.cancelAnimationFrame(this.probeRaf);
 			this.probeRaf = 0;
 		}
+		this.stopAnimationLoop();
 	}
 
 	override dispose(): void {

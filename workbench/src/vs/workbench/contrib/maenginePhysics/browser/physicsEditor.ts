@@ -65,6 +65,7 @@ export class PhysicsEditor extends EditorPane {
 	private currentResource: URI | undefined;
 	private selectedId: string | undefined;
 	private selectorNames: string[] = [];
+	private solverAnalysisType: string | undefined;
 	private lastWritten: string | undefined;
 	private tableRegistration: IDisposable | undefined;
 
@@ -104,16 +105,18 @@ export class PhysicsEditor extends EditorPane {
 		this.currentResource = resource;
 		if (resource) {
 			const geometryUri = joinPath(dirname(dirname(resource)), '02 Geometry', 'geometry.json');
+			const solverUri = joinPath(dirname(dirname(resource)), '06 Solver', 'solver.json');
 			this.inputDisposables.add(this.fileService.onDidFilesChange(async e => {
-				if (e.contains(resource) || e.contains(geometryUri)) {
+				if (e.contains(resource) || e.contains(geometryUri) || e.contains(solverUri)) {
 					const geometryChanged = e.contains(geometryUri);
+					const solverChanged = e.contains(solverUri);
 					const physicsChanged = e.contains(resource);
 					if (physicsChanged) {
 						try {
 							const content = await this.fileService.readFile(resource);
 							const text = content.value.toString();
 							if (text === this.lastWritten) {
-								if (!geometryChanged) {
+								if (!geometryChanged && !solverChanged) {
 									return;
 								}
 							} else {
@@ -126,6 +129,9 @@ export class PhysicsEditor extends EditorPane {
 					if (geometryChanged) {
 						await this.loadGeometry(resource);
 					}
+					if (solverChanged) {
+						await this.loadSolver(resource);
+					}
 					this.render();
 				}
 			}));
@@ -135,6 +141,7 @@ export class PhysicsEditor extends EditorPane {
 
 	override clearInput(): void {
 		this.inputDisposables.clear();
+		this.solverAnalysisType = undefined;
 		this.tableRegistration?.dispose();
 		this.tableRegistration = undefined;
 		this.propertiesDockService.clearProperties();
@@ -155,8 +162,22 @@ export class PhysicsEditor extends EditorPane {
 		} catch {
 			this.currentData = undefined;
 		}
-		await this.loadGeometry(resource);
+		await Promise.all([
+			this.loadGeometry(resource),
+			this.loadSolver(resource)
+		]);
 		this.render();
+	}
+
+	private async loadSolver(resource: URI): Promise<void> {
+		try {
+			const solverUri = joinPath(dirname(dirname(resource)), '06 Solver', 'solver.json');
+			const content = await this.fileService.readFile(solverUri);
+			const solverData = JSON.parse(content.value.toString()) as { analysisType?: unknown };
+			this.solverAnalysisType = typeof solverData?.analysisType === 'string' ? solverData.analysisType : undefined;
+		} catch {
+			this.solverAnalysisType = undefined;
+		}
 	}
 
 	private async loadGeometry(resource: URI): Promise<void> {
@@ -250,7 +271,8 @@ export class PhysicsEditor extends EditorPane {
 				const typeSelect = append(row, $<HTMLSelectElement>('select.ma-physics-select'));
 				append(typeSelect, $<HTMLOptionElement>('option', { value: 'fixed' }, localize('physics.fixedSupport', "Fixed support")));
 				append(typeSelect, $<HTMLOptionElement>('option', { value: 'displacement' }, localize('physics.prescribedDisplacement', "Prescribed displacement")));
-				typeSelect.value = bc.type === 'displacement' ? 'displacement' : 'fixed';
+				append(typeSelect, $<HTMLOptionElement>('option', { value: 'frictionless' }, localize('physics.frictionless', "Frictionless / symmetry plane")));
+				typeSelect.value = bc.type === 'displacement' ? 'displacement' : (bc.type === 'frictionless' ? 'frictionless' : 'fixed');
 
 				// Selector <select>
 				const selectorSelect = append(row, this.createSelectorSelect(bc.selector));
@@ -282,6 +304,8 @@ export class PhysicsEditor extends EditorPane {
 					}));
 					append(group, $('span.ma-physics-unit', undefined, 'mm'));
 					dispInputs = { inputUx, inputUy, inputUz };
+				} else if (bc.type === 'frictionless') {
+					append(row, $('span.ma-physics-hint', undefined, localize('physics.frictionlessHint', "No motion normal to the face (face must be flat and face X, Y or Z)")));
 				}
 
 				// Status element for warnings / errors
@@ -325,8 +349,8 @@ export class PhysicsEditor extends EditorPane {
 				this.inputDisposables.add(addDisposableListener(typeSelect, EventType.CHANGE, async () => {
 					const newType = typeSelect.value;
 					if (newType !== bc.type) {
-						if (newType === 'fixed') {
-							bc.type = 'fixed';
+						if (newType === 'fixed' || newType === 'frictionless') {
+							bc.type = newType;
 							delete bc.ux;
 							delete bc.uy;
 							delete bc.uz;
@@ -338,6 +362,9 @@ export class PhysicsEditor extends EditorPane {
 						}
 						await this.saveData();
 						this.render();
+						if (this.selectedId === bc.id) {
+							this.selectConstraint(bc);
+						}
 					}
 				}));
 
@@ -390,6 +417,10 @@ export class PhysicsEditor extends EditorPane {
 		addLoadBtn.style.fontSize = 'var(--ma-font-xs, 11px)';
 
 		this.inputDisposables.add(addDisposableListener(addLoadBtn, EventType.CLICK, () => this.addLoad()));
+
+		if (this.solverAnalysisType === 'modal_frequency') {
+			append(loadSec, $('.ma-physics-modal-notice', undefined, localize('physics.modalUnusedNotice', "Modal analysis: loads and gravity are not used.")));
+		}
 
 		if (this.selectorNames.length === 0) {
 			append(loadSec, $('.ma-physics-no-selectors-notice', undefined, localize('physics.defineSelectorsFirst', "Define face selectors in the Geometry editor first.")));
@@ -584,6 +615,10 @@ export class PhysicsEditor extends EditorPane {
 		const gravHead = append(gravSec, $('.ma-physics-header-row'));
 		append(gravHead, $('.ma-physics-section-title', undefined, localize('physics.gravityTitle', "Gravitational Acceleration")));
 
+		if (this.solverAnalysisType === 'modal_frequency') {
+			append(gravSec, $('.ma-physics-modal-notice', undefined, localize('physics.modalUnusedNotice', "Modal analysis: loads and gravity are not used.")));
+		}
+
 		const gravRow = append(gravSec, $('.ma-physics-item-row'));
 		if (this.selectedId === 'gravity') {
 			gravRow.classList.add('selected');
@@ -740,7 +775,7 @@ export class PhysicsEditor extends EditorPane {
 			...constraints.map(c => ({
 				id: c.id,
 				kind: 'Boundary condition',
-				type: c.type === 'fixed' ? 'Fixed support' : (c.type === 'displacement' ? 'Prescribed displacement' : c.type),
+				type: this.getConstraintTypeLabel(c.type),
 				selector: c.selector,
 				value: this.describeConstraintValue(c)
 			})),
@@ -760,16 +795,35 @@ export class PhysicsEditor extends EditorPane {
 		}
 	}
 
+	private getConstraintTypeLabel(type: string): string {
+		switch (type) {
+			case 'fixed':
+				return localize('physics.fixedSupport', "Fixed support");
+			case 'displacement':
+				return localize('physics.prescribedDisplacement', "Prescribed displacement");
+			case 'frictionless':
+				return localize('physics.frictionless', "Frictionless / symmetry plane");
+			default:
+				return type;
+		}
+	}
+
 	private selectConstraint(bc: IConstraint): void {
 		this.selectedId = bc.id;
+		const typeLabel = this.getConstraintTypeLabel(bc.type);
+		const dofsValue = bc.type === 'fixed'
+			? 'UX=0, UY=0, UZ=0'
+			: bc.type === 'frictionless'
+				? localize('physics.normalToFace', "normal to face")
+				: this.describeConstraintValue(bc);
 		this.propertiesDockService.setProperties({
 			title: bc.id,
-			detail: bc.type === 'fixed' ? localize('physics.fixedSupport', "Fixed Support") : localize('physics.prescribedDisplacement', "Prescribed Displacement"),
+			detail: typeLabel,
 			rows: [
 				{ name: localize('prop.id', "ID"), value: bc.id },
-				{ name: localize('prop.type', "Type"), value: bc.type === 'fixed' ? 'Fixed support' : (bc.type === 'displacement' ? 'Prescribed displacement' : bc.type) },
+				{ name: localize('prop.type', "Type"), value: typeLabel },
 				{ name: localize('prop.selector', "Target Selector"), value: bc.selector },
-				{ name: localize('prop.dofs', "Constrained DOFs"), value: bc.type === 'fixed' ? "UX=0, UY=0, UZ=0" : this.describeConstraintValue(bc) }
+				{ name: localize('prop.dofs', "Constrained DOFs"), value: dofsValue }
 			]
 		});
 	}
@@ -777,6 +831,9 @@ export class PhysicsEditor extends EditorPane {
 	private describeConstraintValue(c: IConstraint): string {
 		if (c.type === 'fixed') {
 			return 'All DOFs fixed';
+		}
+		if (c.type === 'frictionless') {
+			return localize('physics.normalDispZero', "normal displacement = 0");
 		}
 		const parts: string[] = [];
 		if (typeof c.ux === 'number') {

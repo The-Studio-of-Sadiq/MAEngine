@@ -8,7 +8,7 @@ import { $, addDisposableListener, append, clearNode, EventType } from '../../..
 import { encodeBase64 } from '../../../../base/common/buffer.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Codicon } from '../../../../base/common/codicons.js';
-import { DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
+import { DisposableStore, IDisposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import { dirname, joinPath } from '../../../../base/common/resources.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -35,10 +35,16 @@ import {
 	formatResultNumber,
 	formatScaleFactor,
 	IResultViewData,
+	IResultViewMode,
 	IResultViewerState,
 	parseResultViewData,
 	ResultViewer
 } from './resultViewer.js';
+
+interface IModalModeSummary {
+	readonly mode: number;
+	readonly frequency_Hz: number;
+}
 
 interface IResultsSummary {
 	readonly maxVonMises_MPa?: number | null;
@@ -48,10 +54,23 @@ interface IResultsSummary {
 	readonly minDisplacement_mm?: number | null;
 	/** Summed nodal reaction force per support selector, [Fx, Fy, Fz] in N (read from the .frd). */
 	readonly reactionForces_N?: { readonly [selector: string]: readonly number[] } | null;
+	readonly modes?: readonly IModalModeSummary[] | null;
 }
 
 function formatValue(value: number | null | undefined, unit: string): string | undefined {
 	return typeof value === 'number' && isFinite(value) ? `${Number(value.toPrecision(5))} ${unit}`.trim() : undefined;
+}
+
+function roundSigFigs(value: number, digits: number): number {
+	if (!Number.isFinite(value) || value === 0) {
+		return 0;
+	}
+	const rounded = Number(value.toPrecision(digits));
+	return rounded === 0 ? 0 : rounded;
+}
+
+function formatSigFigs(value: number, digits: number): string {
+	return String(roundSigFigs(value, digits));
 }
 
 interface IResultRow {
@@ -61,14 +80,45 @@ interface IResultRow {
 	readonly unit: string;
 }
 
+interface IModalResultRow {
+	readonly mode: number;
+	readonly frequencyHz: number;
+	readonly frequencyRadS: number;
+}
+
 interface IResultsData {
 	readonly schema?: number;
 	readonly hasResults?: boolean;
+	readonly analysisType?: string;
 	readonly resultFile?: string;
 	readonly viewFile?: string;
 	readonly gltfFile?: string;
 	readonly imageFile?: string;
 	readonly summary?: IResultsSummary;
+}
+
+function isModalResults(data: IResultsData | undefined): boolean {
+	return data?.analysisType === 'modal_frequency';
+}
+
+function getSummaryModes(data: IResultsData | undefined): readonly IModalModeSummary[] {
+	const raw = data?.summary?.modes;
+	if (!Array.isArray(raw)) {
+		return [];
+	}
+	const modes: IModalModeSummary[] = [];
+	for (const entry of raw) {
+		if (
+			entry &&
+			typeof entry.mode === 'number' &&
+			Number.isFinite(entry.mode) &&
+			typeof entry.frequency_Hz === 'number' &&
+			Number.isFinite(entry.frequency_Hz)
+		) {
+			modes.push({ mode: entry.mode, frequency_Hz: entry.frequency_Hz });
+		}
+	}
+	return modes;
 }
 
 function imageMimeType(fileName: string): string {
@@ -104,11 +154,14 @@ export class ResultsEditor extends EditorPane {
 	private loadGeneration = 0;
 	private loadedViewSignature: string | undefined;
 	private isDisposed = false;
+	private isEditorVisible = true;
 
 	private readonly inputDisposables = this._register(new DisposableStore());
 	private readonly viewportDisposables = this._register(new DisposableStore());
 	private readonly viewer = this._register(new MutableDisposable<ResultViewer>());
 	private readonly segmentControl = this._register(new MutableDisposable<ISegmentedControl<'stress' | 'deformation' | 'other'>>());
+	private readonly modeControl = this._register(new MutableDisposable<IDisposable>());
+	private readonly tableRegistration = this._register(new MutableDisposable<IDisposable>());
 
 	constructor(
 		group: IEditorGroup,
@@ -144,6 +197,12 @@ export class ResultsEditor extends EditorPane {
 		}));
 	}
 
+	protected override setEditorVisible(visible: boolean): void {
+		super.setEditorVisible(visible);
+		this.isEditorVisible = visible;
+		this.viewer.value?.setVisible(visible);
+	}
+
 	override async setInput(input: EditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
 		await super.setInput(input, options, context, token);
 		this.inputDisposables.clear();
@@ -177,6 +236,8 @@ export class ResultsEditor extends EditorPane {
 		this.inputDisposables.clear();
 		this.clearViewport();
 		this.segmentControl.clear();
+		this.modeControl.clear();
+		this.tableRegistration.clear();
 		this.propertiesDockService.clearProperties();
 		super.clearInput();
 	}
@@ -217,6 +278,7 @@ export class ResultsEditor extends EditorPane {
 		if (!hasResults) {
 			this.clearViewport();
 			this.segmentControl.clear();
+			this.modeControl.clear();
 			return;
 		}
 
@@ -224,7 +286,7 @@ export class ResultsEditor extends EditorPane {
 		const folder = dirname(resource);
 		const viewFile = typeof data?.viewFile === 'string' && data.viewFile.trim().length > 0 ? data.viewFile.trim() : undefined;
 		const imageFile = typeof data?.imageFile === 'string' && data.imageFile.trim().length > 0 ? data.imageFile.trim() : undefined;
-		const nextSignature = `${folder.toString()}|${viewFile ?? ''}|${imageFile ?? ''}`;
+		const nextSignature = `${folder.toString()}|${data?.analysisType ?? ''}|${viewFile ?? ''}|${imageFile ?? ''}`;
 
 		if (!forceReloadView && this.loadedViewSignature === nextSignature && this.viewportArea.childElementCount > 0) {
 			return;
@@ -249,7 +311,10 @@ export class ResultsEditor extends EditorPane {
 		}
 
 		if (viewData) {
-			const mounted = this.mountViewer(viewData);
+			const effectiveViewData = isModalResults(data) && viewData.analysisType !== 'modal_frequency'
+				? { ...viewData, analysisType: 'modal_frequency' }
+				: viewData;
+			const mounted = this.mountViewer(effectiveViewData);
 			if (mounted) {
 				this.loadedViewSignature = nextSignature;
 				return;
@@ -333,7 +398,8 @@ export class ResultsEditor extends EditorPane {
 			this.propertiesDockService.clearProperties();
 
 			// Register empty Results table
-			this.inputDisposables.add(MAEngineTables.registerTable<IResultRow>({
+			this.tableRegistration.clear();
+			this.tableRegistration.value = MAEngineTables.registerTable<IResultRow>({
 				id: 'maengine.results.table',
 				label: localize('table.results', "Results"),
 				getData: () => ({
@@ -346,23 +412,79 @@ export class ResultsEditor extends EditorPane {
 					rows: [],
 					emptyText: localize('table.resultsEmpty', "No simulation results available yet. Run the solver first.")
 				})
-			}));
+			});
 
 			return false;
 		}
 
 		// When results are present
 		this.frame.setEmpty(undefined);
+		const isModal = isModalResults(data);
+		const modalModes = isModal ? getSummaryModes(data) : [];
+
 		if (isStale) {
 			this.frame.setStatus({
 				text: localize('results.statusStale', "Out of date: {0}. Run the solver again to update these results.", this.currentStatus?.hint ?? ''),
 				severity: 'warning',
 				link: { label: localize('results.openSolver', "Open Solver"), run: () => void this.commandService.executeCommand('maengine.project.openPart6') }
 			});
+		} else if (isModal) {
+			let modalStatusText: string;
+			if (modalModes.length >= 2) {
+				modalStatusText = localize(
+					'results.statusModalDone',
+					"Modal analysis: {0} modes from {1} to {2} Hz",
+					modalModes.length,
+					formatSigFigs(modalModes[0].frequency_Hz, 4),
+					formatSigFigs(modalModes[modalModes.length - 1].frequency_Hz, 4)
+				);
+			} else if (modalModes.length === 1) {
+				modalStatusText = localize(
+					'results.statusModalSingle',
+					"Modal analysis: 1 mode at {0} Hz",
+					formatSigFigs(modalModes[0].frequency_Hz, 4)
+				);
+			} else {
+				modalStatusText = localize('results.statusModalEmpty', "Modal analysis: no modes reported");
+			}
+			this.frame.setStatus({ text: modalStatusText });
 		} else {
 			this.frame.setStatus({
 				text: localize('results.statusDone', "Solution available: von Mises stress and deformation fields computed")
 			});
+		}
+
+		if (isModal) {
+			this.propertiesDockService.setProperties({
+				title: localize('results.naturalFrequenciesTitle', "Natural frequencies"),
+				rows: modalModes.map(m => ({
+					name: localize('prop.modeNumber', "Mode {0}", m.mode),
+					value: localize('prop.frequencyHz', "{0} Hz", formatSigFigs(m.frequency_Hz, 6))
+				}))
+			});
+
+			const modalRows: IModalResultRow[] = modalModes.map(m => ({
+				mode: m.mode,
+				frequencyHz: roundSigFigs(m.frequency_Hz, 6),
+				frequencyRadS: roundSigFigs(2 * Math.PI * m.frequency_Hz, 6)
+			}));
+
+			this.tableRegistration.clear();
+			this.tableRegistration.value = MAEngineTables.registerTable<IModalResultRow>({
+				id: 'maengine.results.table',
+				label: localize('table.results', "Results"),
+				getData: () => ({
+					columns: [
+						{ id: 'mode', label: localize('col.mode', "Mode"), align: 'right', sortable: true, getValue: (r: IModalResultRow) => r.mode },
+						{ id: 'frequencyHz', label: localize('col.frequencyHz', "Frequency (Hz)"), align: 'right', sortable: true, getValue: (r: IModalResultRow) => r.frequencyHz },
+						{ id: 'frequencyRadS', label: localize('col.frequencyRadS', "Frequency (rad/s)"), align: 'right', sortable: true, getValue: (r: IModalResultRow) => r.frequencyRadS }
+					],
+					rows: modalRows,
+					emptyText: localize('table.modalResultsEmpty', "No natural frequencies available.")
+				})
+			});
+
+			return true;
 		}
 
 		const summary = data?.summary;
@@ -392,7 +514,8 @@ export class ResultsEditor extends EditorPane {
 			{ field: 'Displacement Magnitude', max: disp, min: formatValue(summary?.minDisplacement_mm, 'mm') ?? na, unit: 'mm' }
 		];
 
-		this.inputDisposables.add(MAEngineTables.registerTable<IResultRow>({
+		this.tableRegistration.clear();
+		this.tableRegistration.value = MAEngineTables.registerTable<IResultRow>({
 			id: 'maengine.results.table',
 			label: localize('table.results', "Results"),
 			getData: () => ({
@@ -404,7 +527,7 @@ export class ResultsEditor extends EditorPane {
 				],
 				rows: resultRows
 			})
-		}));
+		});
 
 		return true;
 	}
@@ -412,6 +535,9 @@ export class ResultsEditor extends EditorPane {
 	private mountViewer(viewData: IResultViewData): boolean {
 		// Release any previous WebGL viewer before creating a new one
 		this.clearViewport();
+
+		const isModal = isModalResults(this.currentData);
+		const modalModes: readonly IResultViewMode[] = isModal ? (viewData.modes ?? []) : [];
 
 		const controlsBar = append(this.viewportArea, $('.ma-results-controls'));
 		const stage = append(this.viewportArea, $('.ma-results-stage'));
@@ -423,23 +549,64 @@ export class ResultsEditor extends EditorPane {
 			return false;
 		}
 		this.viewer.value = viewerInstance;
+		viewerInstance.setVisible(this.isEditorVisible);
 
-		const segments = this.ensureSegmentControl();
 		const fields = viewerInstance.getFields();
-		const hasVonMises = fields.some(f => f.id === 'von_mises');
-		const hasDispMag = fields.some(f => f.id === 'disp_mag');
-		segments.setEnabled('stress', hasVonMises);
-		segments.setEnabled('deformation', hasDispMag);
+		let segments: ISegmentedControl<'stress' | 'deformation' | 'other'> | undefined;
+		let fieldSelect: HTMLSelectElement | undefined;
+		let modeSelect: HTMLSelectElement | undefined;
 
-		// Field selector
-		const fieldGroup = append(controlsBar, $('.ma-results-control-group'));
-		append(fieldGroup, $('label.ma-results-control-label', undefined, localize('results.fieldLabel', "Field")));
-		const fieldSelect = append(fieldGroup, $<HTMLSelectElement>('select.ma-results-select', {
-			'aria-label': localize('results.fieldAria', "Contour field")
-		}));
-		for (const f of fields) {
-			const optText = f.unit ? `${f.label} (${f.unit})` : f.label;
-			append(fieldSelect, $<HTMLOptionElement>('option', { value: f.id }, optText));
+		if (isModal) {
+			this.segmentControl.clear();
+			this.modeControl.clear();
+			if (modalModes.length > 0) {
+				const modeWrapper = append(this.frame.titleSlot, $('.ma-results-mode-control'));
+				append(modeWrapper, $('label.ma-results-control-label', undefined, localize('results.modeLabel', "Mode")));
+				const selectEl = append(modeWrapper, $<HTMLSelectElement>('select.ma-results-select.ma-results-mode-select', {
+					'aria-label': localize('results.modeAria', "Natural frequency mode")
+				}));
+				for (const m of modalModes) {
+					append(selectEl, $<HTMLOptionElement>('option', { value: String(m.mode) },
+						localize('results.modeOption', "Mode {0}: {1} Hz", m.mode, formatSigFigs(m.frequency_Hz, 4))));
+				}
+				const modeStore = new DisposableStore();
+				modeStore.add(toDisposable(() => modeWrapper.remove()));
+				modeStore.add(addDisposableListener(selectEl, EventType.CHANGE, () => {
+					const selectedMode = modalModes.find(m => m.mode === Number(selectEl.value));
+					if (!selectedMode) {
+						return;
+					}
+					viewerInstance.setDisplacement(selectedMode.displacement);
+					const targetFieldId = `mode_${selectedMode.mode}`;
+					if (fields.some(f => f.id === targetFieldId)) {
+						viewerInstance.setField(targetFieldId);
+					}
+				}));
+				this.modeControl.value = modeStore;
+				modeSelect = selectEl;
+			}
+		} else {
+			this.modeControl.clear();
+			segments = this.ensureSegmentControl();
+			const hasVonMises = fields.some(f => f.id === 'von_mises');
+			const hasDispMag = fields.some(f => f.id === 'disp_mag');
+			segments.setEnabled('stress', hasVonMises);
+			segments.setEnabled('deformation', hasDispMag);
+
+			// Field selector
+			const fieldGroup = append(controlsBar, $('.ma-results-control-group'));
+			append(fieldGroup, $('label.ma-results-control-label', undefined, localize('results.fieldLabel', "Field")));
+			const selectEl = append(fieldGroup, $<HTMLSelectElement>('select.ma-results-select', {
+				'aria-label': localize('results.fieldAria', "Contour field")
+			}));
+			for (const f of fields) {
+				const optText = f.unit ? `${f.label} (${f.unit})` : f.label;
+				append(selectEl, $<HTMLOptionElement>('option', { value: f.id }, optText));
+			}
+			this.viewportDisposables.add(addDisposableListener(selectEl, EventType.CHANGE, () => {
+				viewerInstance.setField(selectEl.value);
+			}));
+			fieldSelect = selectEl;
 		}
 
 		// Deformation scale selector + custom number input
@@ -468,6 +635,20 @@ export class ResultsEditor extends EditorPane {
 			autoOption.disabled = true;
 		}
 
+		let animateButton: HTMLButtonElement | undefined;
+		if (isModal) {
+			animateButton = append(controlsBar, $<HTMLButtonElement>('button.ma-results-tool-btn', {
+				type: 'button',
+				'aria-pressed': 'true',
+				title: localize('results.animateTitle', "Animate mode shape oscillation")
+			}));
+			append(animateButton, $(ThemeIcon.asCSSSelector(Codicon.play)));
+			append(animateButton, $('span', undefined, localize('results.animate', "Animate")));
+			this.viewportDisposables.add(addDisposableListener(animateButton, EventType.CLICK, () => {
+				viewerInstance.setAnimate(!viewerInstance.getState().animating);
+			}));
+		}
+
 		// Spacer + action buttons
 		append(controlsBar, $('.ma-results-controls-spacer'));
 
@@ -488,6 +669,7 @@ export class ResultsEditor extends EditorPane {
 
 		// Legend overlay
 		const legend = append(stage, $('.ma-results-legend'));
+		legend.classList.toggle('modal', isModal);
 		const legendHeader = append(legend, $('.ma-results-legend-header'));
 		const legendTitle = append(legendHeader, $('.ma-results-legend-title'));
 		const legendUnit = append(legendHeader, $('.ma-results-legend-unit'));
@@ -502,10 +684,6 @@ export class ResultsEditor extends EditorPane {
 				viewerInstance.setDeformationScale('custom', val);
 			}
 		};
-
-		this.viewportDisposables.add(addDisposableListener(fieldSelect, EventType.CHANGE, () => {
-			viewerInstance.setField(fieldSelect.value);
-		}));
 
 		this.viewportDisposables.add(addDisposableListener(scaleSelect, EventType.CHANGE, () => {
 			const mode = toDeformationScaleMode(scaleSelect.value);
@@ -548,24 +726,50 @@ export class ResultsEditor extends EditorPane {
 		}));
 
 		updateUI = (state: IResultViewerState) => {
-			fieldSelect.value = state.fieldId;
-			if (state.fieldId === 'von_mises') {
-				segments.setValue('stress');
-			} else if (state.fieldId === 'disp_mag') {
-				segments.setValue('deformation');
-			} else {
-				segments.setValue('other');
-			}
-
+			scaleSelect.disabled = !state.hasDisplacement;
+			autoOption.disabled = !state.hasDisplacement;
+			autoOption.textContent = localize('results.scaleAuto', "Auto (×{0})", formatScaleFactor(state.autoScale));
 			scaleSelect.value = state.scaleMode;
 			customScaleInput.style.display = state.scaleMode === 'custom' ? '' : 'none';
 
 			edgesButton.classList.toggle('active', state.edgesVisible);
 			edgesButton.setAttribute('aria-pressed', String(state.edgesVisible));
 
-			legendTitle.textContent = state.fieldLabel;
-			legendUnit.textContent = state.unit ? `(${state.unit})` : '';
-			legendUnit.style.display = state.unit ? '' : 'none';
+			if (isModal) {
+				const match = /^mode_(\d+)$/.exec(state.fieldId);
+				const activeMode = match
+					? Number(match[1])
+					: (modeSelect ? Number(modeSelect.value) : modalModes[0]?.mode);
+				if (modeSelect && activeMode !== undefined && Number.isFinite(activeMode)) {
+					modeSelect.value = String(activeMode);
+				}
+				if (animateButton) {
+					animateButton.classList.toggle('active', state.animating);
+					animateButton.setAttribute('aria-pressed', String(state.animating));
+					animateButton.disabled = !state.hasDisplacement;
+				}
+				legendTitle.textContent = activeMode !== undefined && Number.isFinite(activeMode)
+					? localize('results.modalLegendTitle', "Mode {0} shape (relative)", activeMode)
+					: state.fieldLabel;
+				legendUnit.textContent = '';
+				legendUnit.style.display = 'none';
+			} else {
+				if (fieldSelect) {
+					fieldSelect.value = state.fieldId;
+				}
+				if (segments) {
+					if (state.fieldId === 'von_mises') {
+						segments.setValue('stress');
+					} else if (state.fieldId === 'disp_mag') {
+						segments.setValue('deformation');
+					} else {
+						segments.setValue('other');
+					}
+				}
+				legendTitle.textContent = state.fieldLabel;
+				legendUnit.textContent = state.unit ? `(${state.unit})` : '';
+				legendUnit.style.display = state.unit ? '' : 'none';
+			}
 
 			const isFlat = Math.abs(state.max - state.min) <= 0;
 			legendBar.classList.toggle('flat', isFlat);
@@ -587,21 +791,43 @@ export class ResultsEditor extends EditorPane {
 				}
 			}
 
-			legendNote.textContent = localize('results.legendNote', "Surface nodes; deformation ×{0}", formatScaleFactor(state.activeScale));
+			if (isModal) {
+				legendNote.textContent = localize('results.modalLegendNote', "Mass-normalised mode shape; amplitude is arbitrary.");
+			} else {
+				legendNote.textContent = localize('results.legendNote', "Surface nodes; deformation ×{0}", formatScaleFactor(state.activeScale));
+			}
 		};
 
-		updateUI(initialState);
+		if (isModal) {
+			if (modalModes.length > 0) {
+				const firstMode = modalModes[0];
+				viewerInstance.setDisplacement(firstMode.displacement);
+				const firstFieldId = `mode_${firstMode.mode}`;
+				if (fields.some(f => f.id === firstFieldId)) {
+					viewerInstance.setField(firstFieldId);
+				}
+			}
+			viewerInstance.setDeformationScale('auto');
+			viewerInstance.setAnimate(true);
+		}
+
+		updateUI(viewerInstance.getState());
 		viewerInstance.layout();
 		return true;
 	}
 
 	private mountFallback(imageDataUri: string | undefined, noteText: string): void {
 		this.clearViewport();
+		this.modeControl.clear();
 
-		const segments = this.ensureSegmentControl();
-		segments.setEnabled('stress', false);
-		segments.setEnabled('deformation', false);
-		segments.setValue('other');
+		if (isModalResults(this.currentData)) {
+			this.segmentControl.clear();
+		} else {
+			const segments = this.ensureSegmentControl();
+			segments.setEnabled('stress', false);
+			segments.setEnabled('deformation', false);
+			segments.setValue('other');
+		}
 
 		const fallback = append(this.viewportArea, $('.ma-results-fallback'));
 		if (imageDataUri) {

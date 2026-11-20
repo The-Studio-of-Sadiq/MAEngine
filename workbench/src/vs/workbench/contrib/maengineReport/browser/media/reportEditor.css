@@ -1,0 +1,36 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) MAEngine contributors. All rights reserved.
+ *  Licensed under the MIT license.
+ *--------------------------------------------------------------------------------------------*/
+
+.maengine-report-editor {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+}
+
+.maengine-report-editor .ma-report-viewport {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	align-items: stretch;
+	justify-content: stretch;
+	overflow: hidden;
+}
+
+.maengine-report-editor .ma-report-viewport.hidden {
+	display: none;
+}
+
+.maengine-report-editor .ma-report-viewport .webview,
+.maengine-report-editor .ma-report-viewport iframe {
+	width: 100%;
+	height: 100%;
+	border: none;
+	flex: 1;
+}
