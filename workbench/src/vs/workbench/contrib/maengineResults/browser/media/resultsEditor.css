@@ -18,43 +18,239 @@
 	min-height: 0;
 	position: relative;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: stretch;
+	background: var(--ma-surface, var(--vscode-editor-background));
 	overflow: hidden;
 }
 
-.maengine-results-editor .ma-results-canvas-box {
+/* ── viewer controls strip ───────────────────────────────────────────────── */
+
+.maengine-results-editor .ma-results-controls {
+	flex: none;
 	display: flex;
-	flex-direction: column;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--ma-space-2, 8px);
-	color: var(--ma-muted, var(--vscode-descriptionForeground));
-	font-size: var(--ma-font-s, 12px);
-	user-select: none;
+	padding: 6px var(--ma-space-3, 12px);
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	border-bottom: 1px solid var(--ma-border, var(--vscode-panel-border));
+	box-sizing: border-box;
 }
 
-.maengine-results-editor .ma-results-canvas-box svg {
-	color: var(--ma-border, var(--vscode-panel-border));
+.maengine-results-editor .ma-results-control-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 }
+
+.maengine-results-editor .ma-results-control-label {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	white-space: nowrap;
+}
+
+.maengine-results-editor .ma-results-select,
+.maengine-results-editor .ma-results-scale-input {
+	height: 24px;
+	padding: 0 var(--ma-space-2, 8px);
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, var(--ma-border));
+	border-radius: var(--ma-radius, 4px);
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	box-sizing: border-box;
+}
+
+.maengine-results-editor .ma-results-scale-input {
+	width: 78px;
+	font-variant-numeric: tabular-nums;
+}
+
+.maengine-results-editor .ma-results-select:focus-visible,
+.maengine-results-editor .ma-results-scale-input:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	border-color: var(--vscode-focusBorder);
+}
+
+.maengine-results-editor .ma-results-select:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+.maengine-results-editor .ma-results-controls-spacer {
+	flex: 1;
+	min-width: 0;
+}
+
+.maengine-results-editor .ma-results-tool-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ma-space-1, 4px);
+	height: 24px;
+	padding: 0 var(--ma-space-2, 8px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	color: var(--vscode-foreground);
+	font-family: inherit;
+	font-size: var(--ma-font-s, 12px);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.maengine-results-editor .ma-results-tool-btn:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-results-editor .ma-results-tool-btn.active {
+	border-color: var(--ma-accent, var(--vscode-focusBorder));
+	background: var(--vscode-inputOption-activeBackground, var(--vscode-toolbar-hoverBackground));
+}
+
+.maengine-results-editor .ma-results-tool-btn:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* ── 3D stage & canvas ───────────────────────────────────────────────────── */
+
+.maengine-results-editor .ma-results-stage {
+	flex: 1;
+	min-height: 0;
+	position: relative;
+	overflow: hidden;
+	background: var(--ma-surface, var(--vscode-editor-background));
+}
+
+.maengine-results-editor .ma-results-canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	cursor: grab;
+	touch-action: none;
+}
+
+.maengine-results-editor .ma-results-canvas.dragging {
+	cursor: grabbing;
+}
+
+/* ── hover probe tooltip ─────────────────────────────────────────────────── */
+
+.maengine-results-editor .ma-results-probe-tooltip {
+	position: absolute;
+	pointer-events: none;
+	z-index: 5;
+	padding: 4px 8px;
+	background: var(--vscode-editorHoverWidget-background, var(--ma-surface, var(--vscode-editor-background)));
+	color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+	border: 1px solid var(--vscode-editorHoverWidget-border, var(--ma-border));
+	border-radius: var(--ma-radius, 4px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+/* ── contour legend ──────────────────────────────────────────────────────── */
 
 .maengine-results-editor .ma-results-legend {
 	position: absolute;
 	right: var(--ma-space-4, 16px);
 	top: var(--ma-space-4, 16px);
+	z-index: 4;
 	display: flex;
 	flex-direction: column;
-	gap: var(--ma-space-1, 4px);
+	gap: 6px;
 	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
 	background: var(--ma-surface, var(--vscode-editor-background));
 	border: 1px solid var(--ma-border, var(--vscode-panel-border));
 	border-radius: var(--ma-radius, 4px);
-	font-size: var(--ma-font-xs, 11px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+	font-size: 11px;
+	pointer-events: none;
+	user-select: none;
+}
+
+.maengine-results-editor .ma-results-legend-header {
+	display: flex;
+	align-items: baseline;
+	gap: var(--ma-space-1, 4px);
+	font-weight: 600;
+}
+
+.maengine-results-editor .ma-results-legend-unit {
+	font-weight: normal;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-results-editor .ma-results-legend-body {
+	display: flex;
+	align-items: stretch;
+	gap: var(--ma-space-2, 8px);
 }
 
 .maengine-results-editor .ma-results-legend-bar {
-	width: 16px;
-	height: 120px;
-	background: linear-gradient(to bottom, #c62f2f, #c2620e, #2e8540, #1a73c4);
+	width: 14px;
+	height: 160px;
+	flex: none;
+	background: linear-gradient(to top, #1a47d1 0%, #0db8d9 25%, #29c757 50%, #f5db24 75%, #d92424 100%);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
 	border-radius: 2px;
+	box-sizing: border-box;
+}
+
+.maengine-results-editor .ma-results-legend-bar.flat {
+	background: #1a47d1;
+}
+
+.maengine-results-editor .ma-results-legend-ticks {
+	height: 160px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	font-variant-numeric: tabular-nums;
+	line-height: 1.1;
+}
+
+.maengine-results-editor .ma-results-legend-ticks.flat {
+	justify-content: center;
+}
+
+.maengine-results-editor .ma-results-legend-note {
+	font-size: 10px;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	white-space: nowrap;
+}
+
+/* ── static PNG / message fallback ───────────────────────────────────────── */
+
+.maengine-results-editor .ma-results-fallback {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--ma-space-3, 12px);
+	padding: var(--ma-space-4, 16px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+	box-sizing: border-box;
+}
+
+.maengine-results-editor .ma-results-fallback-image {
+	max-width: 100%;
+	max-height: calc(100% - 36px);
+	object-fit: contain;
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+}
+
+.maengine-results-editor .ma-results-fallback-note {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	text-align: center;
+	user-select: none;
 }

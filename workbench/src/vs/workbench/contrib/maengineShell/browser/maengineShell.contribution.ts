@@ -460,13 +460,17 @@ registerAction2(class extends Action2 {
 
 //#region Run All
 
-// Register command maengine.solver.runAll. For now it opens the Solver editor.
+// maengine.solver.runAll: opens the Solver editor (it shows the run log and status) and runs the
+// whole study: mesh when the mesh is missing or out of date, then solve and post-process. When the
+// study can't run, maengine.solve.run says why instead of starting.
 CommandsRegistry.registerCommand(RUN_ALL_COMMAND, async (accessor: ServicesAccessor) => {
 	const editorService = accessor.get(IEditorService);
 	const projectService = accessor.get(IMAEngineProjectService);
+	const commandService = accessor.get(ICommandService);
 	const root = projectService.project?.root;
 	const resource = root ? joinPath(root, '06 Solver', 'solver.json') : URI.from({ scheme: 'maengine', path: '/solver' });
 	await editorService.openEditor(new SolverEditorInput(resource), { pinned: true });
+	await commandService.executeCommand('maengine.solve.run');
 });
 
 // F5 runs solver when project is open and developer mode is off.

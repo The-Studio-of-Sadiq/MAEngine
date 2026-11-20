@@ -12,6 +12,7 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
 import { DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
@@ -33,6 +34,11 @@ import { IPartStatus, IRunTarget, resolvePartStatus, resolveRunTarget } from '..
 import { IMAEngineProjectService } from '../../../services/maengineProject/common/maengineProject.js';
 import { SolverEditorInput } from './solverEditorInput.js';
 
+interface ISolverLastRun {
+	job?: string;
+	frdFile?: string;
+}
+
 interface ISolverData {
 	schema?: number;
 	solver?: string;
@@ -40,15 +46,19 @@ interface ISolverData {
 	analysisType?: string;
 	threads?: number;
 	status?: 'idle' | 'running' | 'converged' | 'failed' | string;
+	lastRun?: ISolverLastRun;
 	convergenceResidual?: number;
 	maxIterations?: number;
 }
 
 interface ISolverConvergenceRow {
-	readonly iteration: number;
-	readonly residual: string;
-	readonly dispCorrection: string;
-	readonly status: string;
+	readonly step: number;
+	readonly increment: number;
+	readonly attempt: number;
+	readonly iterations: number;
+	readonly totalTime: number;
+	readonly stepTime: number;
+	readonly incrementTime: number;
 }
 
 export class SolverEditor extends EditorPane {
@@ -56,14 +66,16 @@ export class SolverEditor extends EditorPane {
 	private frame!: EditorFrame;
 	private contentContainer!: HTMLElement;
 	private currentData: ISolverData | undefined;
-	private currentResource: any;
+	private currentResource: URI | undefined;
 	private logContent: string | undefined;
+	private convergenceRows: ISolverConvergenceRow[] = [];
 	private currentStatus: IPartStatus | undefined;
 	private runTarget: IRunTarget | undefined;
 	private runAction!: Action;
 
 	private readonly inputDisposables = this._register(new DisposableStore());
 	private readonly statusPill = this._register(new MutableDisposable());
+	private readonly convergenceTable = this._register(new MutableDisposable());
 
 	constructor(
 		group: IEditorGroup,
@@ -127,6 +139,8 @@ export class SolverEditor extends EditorPane {
 
 	override clearInput(): void {
 		this.inputDisposables.clear();
+		this.statusPill.clear();
+		this.convergenceTable.clear();
 		this.propertiesDockService.clearProperties();
 		super.clearInput();
 	}
@@ -136,7 +150,7 @@ export class SolverEditor extends EditorPane {
 		super.dispose();
 	}
 
-	private async load(resource: any): Promise<void> {
+	private async load(resource: URI): Promise<void> {
 		try {
 			const content = await this.fileService.readFile(resource);
 			this.currentData = JSON.parse(content.value.toString()) as ISolverData;
@@ -159,10 +173,69 @@ export class SolverEditor extends EditorPane {
 			}
 		}
 		this.logContent = logs.length ? logs.join('\n') : undefined;
+		this.convergenceRows = await this.loadConvergenceRows(resource, this.currentData);
 
 		this.currentStatus = await resolvePartStatus('solver', this.fileService, this.projectService, this.currentData, resource);
 		this.runTarget = await resolveRunTarget('solve', this.fileService, this.contextService, this.projectService);
 		this.render();
+	}
+
+	private async loadConvergenceRows(resource: URI, data: ISolverData | undefined): Promise<ISolverConvergenceRow[]> {
+		const lastRun = data?.lastRun;
+		let job = typeof lastRun?.job === 'string' ? lastRun.job.trim() : '';
+		if (!job && typeof lastRun?.frdFile === 'string') {
+			const frd = lastRun.frdFile.trim();
+			if (frd) {
+				job = frd.replace(/\.[^/.\\]+$/, '');
+			}
+		}
+		if (!job) {
+			return [];
+		}
+
+		try {
+			const staUri = joinPath(dirname(resource), `${job}.sta`);
+			if (!await this.fileService.exists(staUri)) {
+				return [];
+			}
+			const content = (await this.fileService.readFile(staUri)).value.toString();
+			return this.parseStaFile(content);
+		} catch {
+			return [];
+		}
+	}
+
+	private parseStaFile(content: string): ISolverConvergenceRow[] {
+		const rows: ISolverConvergenceRow[] = [];
+		for (const line of content.split(/\r?\n/)) {
+			const trimmed = line.trim();
+			if (!trimmed) {
+				continue;
+			}
+			const parts = trimmed.split(/\s+/);
+			if (parts.length < 7) {
+				continue;
+			}
+			const step = Number(parts[0]);
+			const increment = Number(parts[1]);
+			const attempt = Number(parts[2]);
+			const iterations = Number(parts[3]);
+			const totalTime = Number(parts[4]);
+			const stepTime = Number(parts[5]);
+			const incrementTime = Number(parts[6]);
+			if (
+				Number.isFinite(step) &&
+				Number.isFinite(increment) &&
+				Number.isFinite(attempt) &&
+				Number.isFinite(iterations) &&
+				Number.isFinite(totalTime) &&
+				Number.isFinite(stepTime) &&
+				Number.isFinite(incrementTime)
+			) {
+				rows.push({ step, increment, attempt, iterations, totalTime, stepTime, incrementTime });
+			}
+		}
+		return rows;
 	}
 
 	private render(): void {
@@ -231,20 +304,23 @@ export class SolverEditor extends EditorPane {
 				: undefined;
 
 		// Register Convergence table to bottom Tables panel
-		this.inputDisposables.add(MAEngineTables.registerTable<ISolverConvergenceRow>({
+		this.convergenceTable.value = MAEngineTables.registerTable<ISolverConvergenceRow>({
 			id: 'maengine.solver.convergence',
 			label: localize('table.solverConvergence', "Solver Convergence"),
 			getData: () => ({
 				columns: [
-					{ id: 'iteration', label: localize('col.iter', "Iteration"), sortable: true, getValue: (r: ISolverConvergenceRow) => r.iteration },
-					{ id: 'residual', label: localize('col.residual', "Force Residual"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.residual },
-					{ id: 'dispCorrection', label: localize('col.dispCorr', "Disp. Correction"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.dispCorrection },
-					{ id: 'status', label: localize('col.iterStatus', "Status"), sortable: true, getValue: (r: ISolverConvergenceRow) => r.status }
+					{ id: 'step', label: localize('col.step', "Step"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.step },
+					{ id: 'increment', label: localize('col.increment', "Increment"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.increment },
+					{ id: 'attempt', label: localize('col.attempt', "Attempt"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.attempt },
+					{ id: 'iterations', label: localize('col.iterations', "Iterations"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.iterations },
+					{ id: 'totalTime', label: localize('col.totalTime', "Total time"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.totalTime },
+					{ id: 'stepTime', label: localize('col.stepTime', "Step time"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.stepTime },
+					{ id: 'incrementTime', label: localize('col.incrementTime', "Increment time"), align: 'right', sortable: true, getValue: (r: ISolverConvergenceRow) => r.incrementTime }
 				],
-				rows: [],
-				emptyText: localize('table.solverEmpty', "No convergence data available yet. Run the solver first.")
+				rows: this.convergenceRows,
+				emptyText: localize('table.solverEmpty', "No solver run yet.")
 			})
-		}));
+		});
 
 		// Render Content Layout
 		clearNode(this.contentContainer);
@@ -260,9 +336,11 @@ export class SolverEditor extends EditorPane {
 		append(fType, $('label', undefined, localize('solver.analysisType', "Analysis Step Type")));
 		const selType = append(fType, $<HTMLSelectElement>('select'));
 		append(selType, $<HTMLOptionElement>('option', { value: 'static_linear' }, localize('solver.staticLinear', "Static Linear Stress (*STATIC)")));
-		append(selType, $<HTMLOptionElement>('option', { value: 'frequency_modal' }, localize('solver.frequencyModal', "Modal Extraction (*FREQUENCY)")));
-		append(selType, $<HTMLOptionElement>('option', { value: 'heat_transfer' }, localize('solver.heatTransfer', "Steady Heat Transfer (*HEAT TRANSFER)")));
-		selType.value = data.analysisType ?? 'static_linear';
+		const analysisType = data.analysisType || 'static_linear';
+		if (analysisType !== 'static_linear') {
+			append(selType, $<HTMLOptionElement>('option', { value: analysisType }, localize('solver.unsupportedAnalysisType', "{0} (not supported yet)", analysisType)));
+		}
+		selType.value = analysisType;
 
 		// Solver Executable
 		const fExe = append(left, $('.ma-solver-field'));
@@ -272,21 +350,15 @@ export class SolverEditor extends EditorPane {
 
 		// Parallel Threads
 		const fThreads = append(left, $('.ma-solver-field'));
-		append(fThreads, $('label', undefined, localize('solver.threads', "Parallel Threads")));
-		const inpThreads = append(fThreads, $<HTMLInputElement>('input', { type: 'number', min: '1', max: '64' }));
-		inpThreads.value = String(data.threads ?? 4);
-
-		// Convergence Residual
-		const fRes = append(left, $('.ma-solver-field'));
-		append(fRes, $('label', undefined, localize('solver.residual', "Convergence Residual (Relative)")));
-		const inpRes = append(fRes, $<HTMLInputElement>('input', { type: 'number', step: '0.0001' }));
-		inpRes.value = String(data.convergenceResidual ?? 0.0001);
-
-		// Max Iterations
-		const fIter = append(left, $('.ma-solver-field'));
-		append(fIter, $('label', undefined, localize('solver.maxIter', "Max Equilibrium Iterations")));
-		const inpIter = append(fIter, $<HTMLInputElement>('input', { type: 'number', min: '10' }));
-		inpIter.value = String(data.maxIterations ?? 100);
+		append(fThreads, $('label', undefined, localize('solver.threads', "Parallel threads (blank = all cores)")));
+		const inpThreads = append(fThreads, $<HTMLInputElement>('input', {
+			type: 'number',
+			min: '1',
+			max: '256',
+			step: '1',
+			placeholder: localize('solver.allCores', "all cores")
+		}));
+		inpThreads.value = typeof data.threads === 'number' ? String(data.threads) : '';
 
 		// Save Button
 		const saveBtn = append(left, $<HTMLButtonElement>('button.monaco-button', { type: 'button' }, localize('solver.saveSettings', "Apply Configuration")));
@@ -297,10 +369,18 @@ export class SolverEditor extends EditorPane {
 			if (!this.currentResource || !this.currentData) {
 				return;
 			}
+			const rawThreads = inpThreads.value.trim();
+			if (rawThreads === '') {
+				delete this.currentData.threads;
+			} else {
+				const parsedThreads = Number(rawThreads);
+				if (!Number.isInteger(parsedThreads) || parsedThreads < 1 || parsedThreads > 256) {
+					this.notificationService.error(localize('solver.invalidThreads', "Parallel threads must be an integer between 1 and 256, or blank for all cores."));
+					return;
+				}
+				this.currentData.threads = parsedThreads;
+			}
 			this.currentData.analysisType = selType.value;
-			this.currentData.threads = Number(inpThreads.value);
-			this.currentData.convergenceResidual = Number(inpRes.value);
-			this.currentData.maxIterations = Number(inpIter.value);
 
 			await this.fileService.writeFile(this.currentResource, VSBuffer.fromString(JSON.stringify(this.currentData, null, '\t')));
 			this.notificationService.info(localize('solver.configSaved', "Solver configuration saved."));
@@ -338,9 +418,7 @@ export class SolverEditor extends EditorPane {
 			rows: [
 				{ name: localize('prop.engine', "Solver Engine"), value: `${data.solver ?? 'calculix'} (${data.executable ?? 'ccx'})` },
 				{ name: localize('prop.analysisType', "Analysis Step Type"), value: data.analysisType ?? "static_linear" },
-				{ name: localize('prop.threads', "Parallel Threads"), value: String(data.threads ?? 4) },
-				{ name: localize('prop.residual', "Convergence Tolerance"), value: String(data.convergenceResidual ?? 0.0001) },
-				{ name: localize('prop.maxIter', "Max Iterations"), value: String(data.maxIterations ?? 100) },
+				{ name: localize('prop.threads', "Parallel Threads"), value: typeof data.threads === 'number' ? String(data.threads) : localize('solver.allCores', "all cores") },
 				{ name: localize('prop.status', "Execution Status"), value: statusText }
 			]
 		});

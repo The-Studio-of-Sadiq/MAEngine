@@ -11,6 +11,21 @@ import pyvista as pv
 import vtk
 
 
+
+def _frd_values(line: str) -> list:
+    """
+    Values of a CalculiX .frd data line (" -1", node id, then the numbers).
+    Numbers can touch ("0.00000E+0003.00000E+001", "-1.97594E-003-6.11249E-004"): this CalculiX
+    build writes 3-digit exponents, so fields are not fixed width (12 or 13 characters). The
+    mantissa always has a dot, so an exponent ends where the next number starts: a sign, or a
+    digit followed by a dot, or the end of the line.
+    """
+    return [float(m) for m in _FRD_NUMBER.findall(line[13:])]
+
+
+_FRD_NUMBER = re.compile(r"[-+]?\d+\.\d*(?:[eE][-+]?\d{2,3}(?=[-+]|\d\.|\s|$))?")
+
+
 class CalculixResultReader:
     def __init__(self, frd_path: str):
         if not os.path.exists(frd_path):
@@ -56,7 +71,7 @@ class CalculixResultReader:
             elif line.startswith(" -1"):
                 if curr_block == "NODES":
                     nid = int(line[3:13])
-                    coords = [float(x) for x in re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", line[13:])]
+                    coords = _frd_values(line)
                     if len(coords) >= 3:
                         nodes[nid] = coords[:3]
                 elif curr_block == "ELEMENTS":
@@ -68,12 +83,12 @@ class CalculixResultReader:
                         curr_elem_id = eid
                 elif curr_block == "DISP":
                     nid = int(line[3:13])
-                    vals = [float(x) for x in re.findall(r"[-+]?\d*\.?\d+[eE][-+]?\d{2,3}", line[13:])]
+                    vals = _frd_values(line)
                     if len(vals) >= 3:
                         disp[nid] = vals[:3]
                 elif curr_block == "STRESS":
                     nid = int(line[3:13])
-                    vals = [float(x) for x in re.findall(r"[-+]?\d*\.?\d+[eE][-+]?\d{2,3}", line[13:])]
+                    vals = _frd_values(line)
                     if len(vals) >= 6:
                         sxx, syy, szz, sxy, syz, szx = vals[:6]
                         vm = float(np.sqrt(0.5 * ((sxx - syy)**2 + (syy - szz)**2 + (szz - sxx)**2 + 6 * (sxy**2 + syz**2 + szx**2))))

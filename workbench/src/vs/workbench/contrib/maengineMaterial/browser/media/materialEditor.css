@@ -20,7 +20,44 @@
 	padding: var(--ma-space-4, 16px);
 	display: flex;
 	flex-direction: column;
-	gap: var(--ma-space-3, 12px);
+	gap: var(--ma-space-4, 16px);
+	max-width: 880px;
+}
+
+.maengine-material-editor .ma-mat-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-material-editor .ma-mat-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--ma-space-2, 8px);
+}
+
+.maengine-material-editor .ma-mat-section-title {
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+}
+
+.maengine-material-editor .ma-mat-add-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	width: auto;
+	padding: 3px 10px;
+	font-size: var(--ma-font-xs, 11px);
+}
+
+.maengine-material-editor .ma-mat-empty-note,
+.maengine-material-editor .ma-mat-assignments-note {
+	font-size: var(--ma-font-s, 12px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
 }
 
 .maengine-material-editor .ma-mat-grid {
@@ -37,11 +74,6 @@
 	border: 1px solid var(--ma-border, var(--vscode-panel-border));
 	border-radius: var(--ma-radius, 4px);
 	background: var(--ma-surface, var(--vscode-editor-background));
-	cursor: pointer;
-}
-
-.maengine-material-editor .ma-mat-card:hover {
-	background: var(--vscode-toolbar-hoverBackground);
 }
 
 .maengine-material-editor .ma-mat-card.selected {
@@ -53,11 +85,47 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--ma-space-2, 8px);
 }
 
-.maengine-material-editor .ma-mat-card-title {
+.maengine-material-editor .ma-mat-card-title-group {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--ma-space-2, 8px);
+	flex: 1;
+	min-width: 220px;
+}
+
+.maengine-material-editor .ma-mat-name-input {
 	font-size: var(--ma-font-m, 13px);
 	font-weight: 600;
+	min-width: 180px;
+	max-width: 260px;
+}
+
+.maengine-material-editor .ma-mat-card-id {
+	font-size: var(--ma-font-xs, 11px);
+	font-family: var(--vscode-editor-font-family, monospace);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
+	padding: 1px 6px;
+	border-radius: var(--ma-radius, 3px);
+	background: var(--ma-surface-alt, var(--vscode-sideBar-background));
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	user-select: text;
+}
+
+.maengine-material-editor .ma-mat-card-header-right {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.maengine-material-editor .ma-mat-card-badge-slot {
+	display: inline-flex;
+	align-items: center;
 }
 
 .maengine-material-editor .ma-mat-card-badge {
@@ -69,20 +137,103 @@
 	border: 1px solid var(--ma-border, var(--vscode-panel-border));
 }
 
-.maengine-material-editor .ma-mat-card-props {
+.maengine-material-editor .ma-mat-action-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 7px;
+	font-size: var(--ma-font-xs, 11px);
+	font-family: inherit;
+	color: var(--vscode-foreground);
+	background: var(--vscode-button-secondaryBackground, transparent);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 3px);
+	cursor: pointer;
+}
+
+.maengine-material-editor .ma-mat-action-btn:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.maengine-material-editor .ma-mat-delete-btn:hover {
+	color: var(--ma-fail, var(--vscode-editorError-foreground));
+}
+
+.maengine-material-editor .ma-mat-fields-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+	gap: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+}
+
+.maengine-material-editor .ma-mat-field {
 	display: flex;
-	flex-wrap: wrap;
-	gap: var(--ma-space-3, 12px) var(--ma-space-4, 16px);
-	font-size: var(--ma-font-s, 12px);
+	flex-direction: column;
+	gap: 3px;
+}
+
+.maengine-material-editor .ma-mat-field-label {
+	font-size: var(--ma-font-xs, 11px);
 	color: var(--ma-muted, var(--vscode-descriptionForeground));
 }
 
-.maengine-material-editor .ma-mat-prop-item {
+.maengine-material-editor .ma-mat-input,
+.maengine-material-editor .ma-mat-select {
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: var(--ma-radius, 2px);
+	padding: 3px 6px;
+	font-size: var(--ma-font-s, 12px);
+	font-family: inherit;
+	box-sizing: border-box;
+	font-variant-numeric: tabular-nums;
+}
+
+.maengine-material-editor .ma-mat-input:focus,
+.maengine-material-editor .ma-mat-select:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	border-color: var(--vscode-focusBorder);
+}
+
+.maengine-material-editor .ma-mat-input.error {
+	border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground));
+}
+
+.maengine-material-editor .ma-mat-card-error {
+	display: none;
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--vscode-errorForeground, var(--vscode-editorError-foreground));
+}
+
+.maengine-material-editor .ma-mat-card-error.visible {
+	display: block;
+}
+
+.maengine-material-editor .ma-mat-body-list {
 	display: flex;
+	flex-direction: column;
 	gap: var(--ma-space-1, 4px);
 }
 
-.maengine-material-editor .ma-mat-prop-value {
-	color: var(--vscode-foreground);
+.maengine-material-editor .ma-mat-body-row {
+	display: grid;
+	grid-template-columns: minmax(140px, 1fr) minmax(90px, auto) minmax(180px, 240px);
+	align-items: center;
+	gap: var(--ma-space-3, 12px);
+	padding: var(--ma-space-2, 8px) var(--ma-space-3, 12px);
+	border: 1px solid var(--ma-border, var(--vscode-panel-border));
+	border-radius: var(--ma-radius, 4px);
+	background: var(--ma-surface, var(--vscode-editor-background));
+}
+
+.maengine-material-editor .ma-mat-body-name {
+	font-size: var(--ma-font-s, 12px);
+	font-weight: 500;
+}
+
+.maengine-material-editor .ma-mat-body-volume {
+	font-size: var(--ma-font-xs, 11px);
+	color: var(--ma-muted, var(--vscode-descriptionForeground));
 	font-variant-numeric: tabular-nums;
+	text-align: right;
 }

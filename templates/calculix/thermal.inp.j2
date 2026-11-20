@@ -33,6 +33,10 @@ Units: {{ project.units.value }}
 ** =============================================================
 ** SECTION ASSIGNMENTS
 ** =============================================================
+{% if eall_members %}
+*ELSET, ELSET=EALL
+{{ eall_members | join(", ") }}
+{% endif %}
 {% for sec in sections %}
 *SOLID SECTION, ELSET={{ sec.elset }}, MATERIAL={{ sec.material }}
 {% endfor %}

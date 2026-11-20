@@ -36,15 +36,19 @@ class CalculixDeckGenerator:
         default_material: Optional[str] = None,
         custom_template: Optional[str] = None,
         nset_node_counts: Optional[Dict[str, int]] = None,
+        sections: Optional[List[Dict[str, str]]] = None,
+        eall_members: Optional[List[str]] = None,
     ) -> str:
         """
         Renders the complete CalculiX .inp file.
         """
         # Determine sections: map element sets to materials
-        mat_name = default_material or (project.materials[0].name if project.materials else "DEFAULT_STEEL")
-        sections = [
-            {"elset": "EALL", "material": mat_name}
-        ]
+        # Per-body sections when given (the mesh then has one element set per body and EALL is
+        # defined here from them); otherwise one section for the whole model.
+        if not sections:
+            mat_name = default_material or (project.materials[0].name if project.materials else "DEFAULT_STEEL")
+            sections = [{"elset": "EALL", "material": mat_name}]
+            eall_members = None
 
         # Select template based on step type or custom override
         if custom_template:
@@ -78,6 +82,7 @@ class CalculixDeckGenerator:
             project=project,
             mesh_file=mesh_file_rel_path,
             sections=sections,
+            eall_members=eall_members or [],
             nset_node_counts=safe_node_counts,
         )
 

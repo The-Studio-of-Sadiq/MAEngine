@@ -293,33 +293,31 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         selectors.append({"name": name, "bounds": b})
         invalid_selectors.discard(name)
 
-    # ---- materials
+    # ---- materials (cards are checked here; which body uses which card is settled after the
+    # CAD file is read, once the number of bodies is known)
     cards = materials_part.get("materials") if isinstance(materials_part.get("materials"), list) else []
     cards = [c for c in cards if isinstance(c, dict)]
-    card: Optional[Dict[str, Any]] = None
+    cards_by_id = {str(c.get("id")): c for c in cards if c.get("id") is not None}
+    geo_bodies = geometry.get("bodies") if isinstance(geometry.get("bodies"), list) else []
+    default_card: Optional[Dict[str, Any]] = None
     if not cards:
         problems.append("Materials: no material cards are defined.")
     else:
         wanted = geometry.get("material")
-        bodies = geometry.get("bodies") if isinstance(geometry.get("bodies"), list) else []
-        if not wanted and bodies and isinstance(bodies[0], dict):
-            wanted = bodies[0].get("material")
-        if wanted:
-            card = next((c for c in cards if c.get("id") == wanted), None)
-            if card is None:
-                problems.append(f"Materials: the body's material '{wanted}' is not in materials.json.")
-        else:
-            card = cards[0]
-            notes.append(
-                f"No material is assigned to the body, so the first material card "
-                f"'{card.get('name', card.get('id'))}' is used."
-            )
-    material: Optional[Material] = None
-    if card is not None:
+        default_card = cards_by_id.get(str(wanted)) if wanted else cards[0]
+        if wanted and default_card is None:
+            problems.append(f"Materials: the study material '{wanted}' is not in materials.json.")
+    built: Dict[int, Optional[Material]] = {}
+
+    def material_from(card: Dict[str, Any]) -> Optional[Material]:
+        """One CalculiX material per card; problems are reported once per card."""
+        if id(card) in built:
+            return built[id(card)]
         e = card.get("elasticModulus_MPa")
         nu = card.get("poissonsRatio")
         rho = card.get("density_tonne_mm3")
         mid = _job_name(str(card.get("id") or card.get("name") or "MATERIAL"))
+        mat: Optional[Material] = None
         if not _is_number(e) or e <= 0:
             problems.append(f"Materials: '{mid}' needs a positive elasticModulus_MPa.")
         if not _is_number(nu) or not (0.0 <= nu < 0.5):
@@ -328,11 +326,13 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
             problems.append(f"Materials: '{mid}' density_tonne_mm3 must be a positive number.")
             rho = None
         if _is_number(e) and e > 0 and _is_number(nu) and 0.0 <= nu < 0.5:
-            material = Material(
+            mat = Material(
                 name=mid,
                 density=float(rho) if rho is not None else None,
                 elastic=ElasticProperty(youngs_modulus=float(e), poissons_ratio=float(nu)),
             )
+        built[id(card)] = mat
+        return mat
 
     # ---- mesh
     order = mesh_part.get("meshOrder", 2)
@@ -350,9 +350,14 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
     if _is_number(global_size) and global_size > 0:
         # The global size is the target element size; it caps the maximum.
         max_size = max(float(min_size), min(float(max_size), float(global_size)))
+    algo_names = {"hxt": MeshAlgorithm.HXT_PARALLEL, "delaunay": MeshAlgorithm.DELAUNAY, "frontal": MeshAlgorithm.FRONTAL}
+    algorithm = algo_names.get(str(mesh_part.get("algorithm", "hxt")))
+    if algorithm is None:
+        problems.append(f"Mesh: algorithm must be one of {', '.join(algo_names)} (got {mesh_part.get('algorithm')!r}).")
+        algorithm = MeshAlgorithm.HXT_PARALLEL
     mesh_config = MeshConfig(
         element_order=int(order),
-        algorithm=MeshAlgorithm.HXT_PARALLEL,
+        algorithm=algorithm,
         min_size=float(min_size),
         max_size=float(max_size),
         optimize_high_order=bool(mesh_part.get("optimizeHighOrder", True)),
@@ -445,6 +450,7 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
             problems.append(f"Physics: load '{lid}' has type {ltype!r}; supported: 'force', 'pressure'.")
 
     gravity = physics.get("gravity")
+    gravity_set = False
     if gravity is not None:
         gvec = _vector(gravity)
         if gvec is None:
@@ -452,8 +458,7 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         else:
             gmag = sum(x * x for x in gvec) ** 0.5
             if gmag > 0:
-                if material is not None and material.density is None:
-                    problems.append("Physics: gravity is set but the material has no density_tonne_mm3.")
+                gravity_set = True
                 loads.append(Load(name="gravity", type=LoadType.GRAVITY, target_set="EALL",
                                   magnitude=gmag, direction=[x / gmag for x in gvec]))
     if not loads:
@@ -490,6 +495,40 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
                 continue
             sets.append(EntitySet(name=sel["name"], entity_type="surface", cad_tag_indices=tags))
 
+    # ---- materials per body
+    n_bodies = len(inspection["bodies"]) if inspection is not None else max(1, len(geo_bodies))
+    body_cards: List[Dict[str, Any]] = []
+    unassigned = 0
+    for i in range(n_bodies):
+        prev = geo_bodies[i] if i < len(geo_bodies) and isinstance(geo_bodies[i], dict) else {}
+        wanted_body = prev.get("material")
+        if wanted_body:
+            c = cards_by_id.get(str(wanted_body))
+            if c is None:
+                problems.append(f"Materials: body '{prev.get('name', f'Body {i + 1}')}' uses '{wanted_body}', "
+                                "which is not in materials.json.")
+                continue
+        else:
+            c = default_card
+            unassigned += 1
+        if c is not None:
+            body_cards.append(c)
+    used_cards: List[Dict[str, Any]] = []
+    for c in body_cards:
+        if all(c is not u for u in used_cards):
+            used_cards.append(c)
+    materials: List[Material] = [m for m in (material_from(c) for c in used_cards) if m is not None]
+    if unassigned and default_card is not None:
+        notes.append(f"{unassigned} of {n_bodies} bodies have no material assigned and use "
+                     f"'{default_card.get('name', default_card.get('id'))}'.")
+    if gravity_set and any(m.density is None for m in materials):
+        problems.append("Physics: gravity is set but a material in use has no density_tonne_mm3.")
+    body_sections: Optional[List[Dict[str, str]]] = None
+    if len(used_cards) > 1 and inspection is not None and len(body_cards) == n_bodies:
+        names = {id(c): material_from(c).name for c in used_cards if material_from(c) is not None}
+        body_sections = [{"elset": f"BODY_{i + 1}", "material": names.get(id(c), "")}
+                         for i, c in enumerate(body_cards)]
+
     if stage == "mesh":
         # Meshing needs geometry, selectors and mesh settings only; physics and solver
         # problems are reported but do not block it.
@@ -503,7 +542,7 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         name=job,
         units=UnitSystem.MM_N_MPA,
         cad_file=cad_path,
-        materials=[material] if material else [],
+        materials=materials,
         sets=sets,
         mesh=mesh_config,
         steps=[Step(name="Static_Step", type=StepType.STATIC_LINEAR, boundary_conditions=bcs, loads=loads)],
@@ -512,9 +551,13 @@ def load_study(study_dir: str, stage: str = "run") -> Tuple[SimulationProject, D
         "study_dir": study_dir,
         "cad_path": cad_path,
         "inspection": inspection,
-        "material_card": card,
+        "material_card": used_cards[0] if len(used_cards) == 1 else None,
+        "material_cards": used_cards,
+        "body_sections": body_sections,
         "notes": notes,
         "geometry": geometry,
+        "mesh_part": mesh_part,
+        "solver_part": solver,
     }
     return project, context
 
@@ -550,6 +593,9 @@ def _read_nsets(mesh_path: str, names: List[str]) -> Dict[str, set]:
     return found
 
 
+from maengine.solvers.calculix.reader import _frd_values  # noqa: E402
+
+
 def read_frd_reactions(frd_path: str) -> Dict[int, List[float]]:
     """Nodal reaction forces (the FORC block of the last increment) from a CalculiX .frd."""
     forces: Dict[int, List[float]] = {}
@@ -568,7 +614,7 @@ def read_frd_reactions(frd_path: str) -> Dict[int, List[float]]:
                     # Fields are nominally 12 wide, but this CalculiX build writes 3-digit
                     # exponents, so a negative value runs into its neighbour: parse by pattern.
                     nid = int(line[3:13])
-                    vals = [float(v) for v in FRD_FLOAT_RE.findall(line[13:])]
+                    vals = _frd_values(line)
                     if len(vals) >= 3:
                         forces[nid] = vals[:3]
     return forces
@@ -593,13 +639,30 @@ def _log(msg: str) -> None:
             pass
 
 
+MESH_SETTING_KEYS = ("meshOrder", "minSize", "maxSize", "globalSize", "optimizeHighOrder", "algorithm")
+
+
+def _mesh_settings(mesh_part: Dict[str, Any]) -> Dict[str, Any]:
+    """The mesh.json keys the user sets (the engine's own outputs, like counts, are left out)."""
+    return {k: mesh_part.get(k) for k in MESH_SETTING_KEYS if k in mesh_part}
+
+
 def _mesh_is_current(study_dir: str, cad_path: str) -> bool:
+    """The mesh is current when it is newer than the CAD file and geometry.json (selectors become
+    mesh sets) and was made with the mesh settings that mesh.json holds now."""
     mesh_path = os.path.join(_part_dir(study_dir, "mesh"), MESH_FILE_NAME)
     if not os.path.exists(mesh_path):
         return False
     mesh_time = os.path.getmtime(mesh_path)
-    inputs = [cad_path, _part_path(study_dir, "geometry"), _part_path(study_dir, "mesh")]
-    return all(not os.path.exists(p) or os.path.getmtime(p) <= mesh_time for p in inputs)
+    inputs = [cad_path, _part_path(study_dir, "geometry")]
+    if any(os.path.exists(p) and os.path.getmtime(p) > mesh_time for p in inputs):
+        return False
+    try:
+        with open(_part_path(study_dir, "mesh"), "r", encoding="utf-8") as f:
+            mesh_part = json.load(f)
+    except (OSError, ValueError):
+        return False
+    return isinstance(mesh_part, dict) and mesh_part.get("meshedWith") == _mesh_settings(mesh_part)
 
 
 def _clear_outputs(folder: str, job: str, extra: Tuple[str, ...] = ()) -> None:
@@ -611,7 +674,7 @@ def _clear_outputs(folder: str, job: str, extra: Tuple[str, ...] = ()) -> None:
             continue
         stem, ext = os.path.splitext(name)
         if (stem == job and ext.lower() in (".inp", ".frd", ".dat", ".sta", ".cvg", ".12d", ".vtu", ".gltf")) \
-                or name == f"{job}_contour.png" or name in extra or name == "spooles.out":
+                or name in (f"{job}_contour.png", f"{job}_view.json") or name in extra or name == "spooles.out":
             os.remove(path)
 
 
@@ -638,7 +701,8 @@ def _sync_bodies(study_dir: str, context: Dict[str, Any]) -> None:
     """Records the bodies, model bounds and faces Gmsh found in the CAD file in geometry.json."""
     geometry = context.get("geometry") or {}
     old = geometry.get("bodies") if isinstance(geometry.get("bodies"), list) else []
-    record = _model_record(context.get("inspection") or {}, old, context.get("material_card") or {})
+    # New bodies start unassigned (they use the default card); assignments are the user's.
+    record = _model_record(context.get("inspection") or {}, old, {})
     if any(geometry.get(k) != v for k, v in record.items()):
         _update_part(study_dir, "geometry", record)
 
@@ -685,11 +749,18 @@ def mesh_study(project: SimulationProject, context: Dict[str, Any]) -> Dict[str,
     _log(f"[*] Meshing {os.path.basename(project.cad_file)} with Gmsh "
          f"(order {project.mesh.element_order}, size {project.mesh.min_size:g}-{project.mesh.max_size:g} mm)...")
     with GmshMesher() as mesher:
+        # Bodies with different materials get one element set each (BODY_1, ...); the deck
+        # then defines EALL from them.
+        volume_tags = None
+        if context.get("body_sections"):
+            tags = [b["tag"] for b in (context.get("inspection") or {}).get("bodies", [])]
+            volume_tags = {sec["elset"]: [tags[i]] for i, sec in enumerate(context["body_sections"])}
         stats = mesher.mesh_cad_file(
             cad_path=project.cad_file,
             output_mesh_path=mesh_path,
             config=project.mesh,
             surface_tags=surface_tags or None,
+            volume_tags=volume_tags,
         )
     for name, count in stats.get("nset_node_counts", {}).items():
         if count <= 0:
@@ -701,6 +772,8 @@ def mesh_study(project: SimulationProject, context: Dict[str, Any]) -> Dict[str,
         "elementCount": stats["num_3d_elements"],
         "setNodeCounts": stats.get("nset_node_counts", {}),
         "meshedAt": _now(),
+        "meshedWith": _mesh_settings(context.get("mesh_part") or {}),
+        "quality": stats.get("quality"),
     })
     _log(f"[+] Mesh written to {os.path.relpath(mesh_path, study_dir)}: "
          f"{stats['num_nodes']} nodes, {stats['num_3d_elements']} elements.")
@@ -725,11 +798,18 @@ def solve_study(project: SimulationProject, context: Dict[str, Any]) -> Dict[str
 
     started = _now()
     _update_part(study_dir, "solver", {"status": "running", "lastRun": {"job": job, "startedAt": started}})
-    _update_part(study_dir, "results", {"hasResults": False}, remove=("resultFile", "gltfFile", "imageFile", "solvedAt"))
+    _update_part(study_dir, "results", {"hasResults": False}, remove=("resultFile", "gltfFile", "imageFile", "viewFile", "solvedAt"))
 
     pipeline = SimulationPipeline(project, work_dir=solver_dir)
     pipeline.mesh_path = os.path.join(solver_dir, MESH_FILE_NAME)
+    if context.get("body_sections"):
+        pipeline.sections = context["body_sections"]
+        pipeline.eall_members = [sec["elset"] for sec in context["body_sections"]]
     pipeline.compile_solver_deck()
+    threads = (context.get("solver_part") or {}).get("threads")
+    if isinstance(threads, int) and not isinstance(threads, bool) and 1 <= threads <= 256:
+        os.environ["OMP_NUM_THREADS"] = str(threads)
+        _log(f"[*] Using {threads} solver threads.")
 
     _log(f"[*] Solving {job} with CalculiX ({pipeline.runner.ccx_path})...")
     with open(log_path, "w", encoding="utf-8") as log:
@@ -748,6 +828,50 @@ def solve_study(project: SimulationProject, context: Dict[str, Any]) -> Dict[str
         "job": job, "startedAt": started, "finishedAt": _now(), "frdFile": f"{job}.frd"}})
     _log(f"[+] CalculiX job completed: {os.path.relpath(pipeline.frd_path, study_dir)}")
     return {"pipeline": pipeline}
+
+
+def export_result_view(vtu_path: str, out_path: str) -> Dict[str, Any]:
+    """
+    Writes the outer surface of the result mesh for the app's 3D results viewer as JSON: node
+    positions, triangles, nodal displacement and nodal fields (von Mises, displacement magnitude
+    and components, stress components). Values are exactly the solver's, rounded to 6 digits.
+    """
+    import numpy as np
+    import pyvista as pv
+
+    grid = pv.read(vtu_path)
+    surf = grid.extract_surface(nonlinear_subdivision=0, pass_pointid=True, algorithm="dataset_surface").triangulate()
+    ids = np.asarray(surf.point_data["vtkOriginalPointIds"], dtype=np.int64)
+    faces = np.asarray(surf.faces).reshape(-1, 4)[:, 1:]
+
+    def flat(a: Any) -> List[float]:
+        return [float(f"{v:.6g}") for v in np.asarray(a, dtype=float).ravel()]
+
+    fields: Dict[str, Any] = {}
+    pd = grid.point_data
+    if "STRESS_VM" in pd:
+        fields["von_mises"] = {"label": "von Mises stress", "unit": "MPa", "values": flat(pd["STRESS_VM"][ids])}
+    if "DISP_MAG" in pd:
+        fields["disp_mag"] = {"label": "Total displacement", "unit": "mm", "values": flat(pd["DISP_MAG"][ids])}
+    if "DISP" in pd:
+        for k, name in enumerate(("ux", "uy", "uz")):
+            fields[name] = {"label": f"Displacement {name[1].upper()}", "unit": "mm", "values": flat(pd["DISP"][ids, k])}
+    if "STRESS" in pd and pd["STRESS"].shape[1] == 6:
+        # CalculiX order: xx, yy, zz, xy, yz, zx
+        for k, name in enumerate(("sxx", "syy", "szz", "sxy", "syz", "szx")):
+            fields[name] = {"label": f"Stress {name[1:].upper()}", "unit": "MPa", "values": flat(pd["STRESS"][ids, k])}
+
+    view = {
+        "schema": 1,
+        "units": {"length": "mm"},
+        "positions": flat(surf.points),
+        "triangles": [int(v) for v in faces.ravel()],
+        "displacement": flat(pd["DISP"][ids]) if "DISP" in pd else None,
+        "fields": fields,
+    }
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(view, f, separators=(",", ":"))
+    return {"points": int(surf.n_points), "triangles": int(faces.shape[0])}
 
 
 def post_study(project: SimulationProject, context: Dict[str, Any], pipeline) -> Dict[str, Any]:
@@ -779,6 +903,12 @@ def post_study(project: SimulationProject, context: Dict[str, Any], pipeline) ->
 
     files = {"resultFile": f"{job}.vtu"}
     try:
+        view_name = f"{job}_view.json"
+        export_result_view(reader.vtu_path, os.path.join(results_dir, view_name))
+        files["viewFile"] = view_name
+    except Exception as e:  # the viewer file is optional; the .vtu holds the data
+        _log(f"[!] Results view export skipped: {e}")
+    try:
         from maengine.post.viewer import FeaResultViewer
         viewer = FeaResultViewer(reader.vtu_path)
         gltf = os.path.join(results_dir, f"{job}.gltf")
@@ -791,6 +921,8 @@ def post_study(project: SimulationProject, context: Dict[str, Any], pipeline) ->
         _log(f"[!] 3D export skipped: {e}")
 
     max_vm = summary.get("max_von_mises_stress")
+    # yield / max von Mises is only meaningful with one material; with several the peak stress
+    # may sit in a body with a different yield strength, so no single factor is reported.
     card = context.get("material_card") or {}
     yield_mpa = card.get("yieldStrength_MPa")
     safety = (yield_mpa / max_vm) if _is_number(yield_mpa) and max_vm else None
@@ -815,7 +947,7 @@ def post_study(project: SimulationProject, context: Dict[str, Any], pipeline) ->
             "minSafetyFactor": sig(safety),
             "reactionForces_N": {k: [sig(x) for x in v] for k, v in reactions.items()},
         },
-        "material": card.get("id"),
+        "material": card.get("id") if card else [c.get("id") for c in context.get("material_cards") or []],
         "job": job,
         "solvedAt": _now(),
     }
@@ -874,7 +1006,7 @@ def run_project(study_dir: str, stage: str = "run") -> int:
     for note in context["notes"]:
         _log(f"[i] {note}")
     sets = ", ".join(f"{s.name} -> faces {s.cad_tag_indices}" for s in project.sets) or "none"
-    _log(f"[*] Job '{project.name}', material {project.materials[0].name}, selectors: {sets}")
+    _log(f"[*] Job '{project.name}', materials {', '.join(m.name for m in project.materials)}, selectors: {sets}")
     if stage == "check":
         _log("[+] The study is complete and can run.")
         return 0

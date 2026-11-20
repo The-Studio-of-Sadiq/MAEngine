@@ -9,9 +9,10 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { Action } from '../../../../base/common/actions.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
-import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
 import { dirname } from '../../../../base/common/resources.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
@@ -36,13 +37,36 @@ import { MeshEditorInput } from './meshEditorInput.js';
 interface IMeshStats {
 	readonly nodes?: number;
 	readonly elements?: number;
-	readonly qualityMinJacobian?: number;
-	readonly qualityAvgJacobian?: number;
+}
+
+interface IMeshQuality {
+	readonly metric?: string;
+	readonly min?: number;
+	readonly mean?: number;
+	readonly belowPoint1?: number;
+	readonly elementCount?: number;
+}
+
+interface IMeshQualityRow {
+	readonly metric: string;
+	readonly value: number;
+	readonly target: string;
+	readonly status: string;
+}
+
+const MESH_ALGORITHMS = ['hxt', 'delaunay', 'frontal'] as const;
+
+function formatSicn(value: number): string {
+	if (value !== 0 && Math.abs(value) < 0.001) {
+		return value.toExponential(2);
+	}
+	return value.toFixed(3);
 }
 
 interface IMeshData {
 	schema?: number;
 	mesher?: string;
+	algorithm?: string;
 	elementType?: string;
 	meshOrder?: number;
 	globalSize?: number;
@@ -52,6 +76,7 @@ interface IMeshData {
 	conformalInterface?: boolean;
 	status?: string;
 	stats?: IMeshStats;
+	quality?: IMeshQuality;
 	/** Written by the engine after meshing (real Gmsh counts). */
 	nodeCount?: number;
 	elementCount?: number;
@@ -62,12 +87,13 @@ export class MeshEditor extends EditorPane {
 	private frame!: EditorFrame;
 	private contentContainer!: HTMLElement;
 	private currentData: IMeshData | undefined;
-	private currentResource: any;
+	private currentResource: URI | undefined;
 	private currentStatus: IPartStatus | undefined;
 	private runTarget: IRunTarget | undefined;
 	private generateAction!: Action;
 
 	private readonly inputDisposables = this._register(new DisposableStore());
+	private readonly qualityTable = this._register(new MutableDisposable());
 
 	constructor(
 		group: IEditorGroup,
@@ -131,6 +157,7 @@ export class MeshEditor extends EditorPane {
 
 	override clearInput(): void {
 		this.inputDisposables.clear();
+		this.qualityTable.clear();
 		this.propertiesDockService.clearProperties();
 		super.clearInput();
 	}
@@ -140,7 +167,7 @@ export class MeshEditor extends EditorPane {
 		super.dispose();
 	}
 
-	private async load(resource: any): Promise<void> {
+	private async load(resource: URI): Promise<void> {
 		try {
 			const content = await this.fileService.readFile(resource);
 			this.currentData = JSON.parse(content.value.toString()) as IMeshData;
@@ -154,7 +181,9 @@ export class MeshEditor extends EditorPane {
 
 	private render(): void {
 		const data = this.currentData ?? {};
-		const hasMesh = this.currentStatus?.state === 'done';
+		// An out-of-date mesh still exists: show it, with a warning that its inputs changed.
+		const isStale = this.currentStatus?.state === 'stale';
+		const hasMesh = this.currentStatus?.state === 'done' || isStale;
 
 		// Keep button enabled only when running is possible
 		const canRun = !!this.runTarget?.canRun;
@@ -174,6 +203,12 @@ export class MeshEditor extends EditorPane {
 					link: { label: localize('mesh.generateLink', "Generate Mesh"), run: () => this.runMesh() }
 				});
 			}
+		} else if (isStale) {
+			this.frame.setStatus({
+				text: localize('mesh.staleHint', "Mesh is out of date: {0}. Generate it again (a solver run also re-meshes).", this.currentStatus?.hint ?? ''),
+				severity: 'warning',
+				link: canRun ? { label: localize('mesh.regenerateLink', "Generate Mesh"), run: () => this.runMesh() } : undefined
+			});
 		} else {
 			this.frame.setStatus({
 				text: typeof nodes === 'number' && typeof elements === 'number'
@@ -184,17 +219,36 @@ export class MeshEditor extends EditorPane {
 
 		// Register Mesh quality table to Tables panel
 		// Only quality values the mesher actually reported; nothing is shown otherwise.
-		const qualityRows: { metric: string; value: number; target: string; status: string }[] = [];
-		if (hasMesh && typeof data.stats?.qualityMinJacobian === 'number') {
-			const v = data.stats.qualityMinJacobian;
-			qualityRows.push({ metric: 'Min Jacobian', value: v, target: '> 0.20', status: v > 0.2 ? 'Passed' : 'Failed' });
-		}
-		if (hasMesh && typeof data.stats?.qualityAvgJacobian === 'number') {
-			const v = data.stats.qualityAvgJacobian;
-			qualityRows.push({ metric: 'Avg Jacobian', value: v, target: '> 0.70', status: v > 0.7 ? 'Passed' : 'Failed' });
+		const qualityRows: IMeshQualityRow[] = [];
+		const quality = data.quality;
+		if (hasMesh && quality) {
+			if (typeof quality.min === 'number' && Number.isFinite(quality.min)) {
+				qualityRows.push({
+					metric: localize('mesh.qualityMinSicn', "Min SICN"),
+					value: quality.min,
+					target: '> 0.1',
+					status: quality.min > 0.1 ? localize('status.passed', "Passed") : localize('status.warning', "Warning")
+				});
+			}
+			if (typeof quality.mean === 'number' && Number.isFinite(quality.mean)) {
+				qualityRows.push({
+					metric: localize('mesh.qualityMeanSicn', "Mean SICN"),
+					value: quality.mean,
+					target: '> 0.5',
+					status: quality.mean > 0.5 ? localize('status.passed', "Passed") : localize('status.warning', "Warning")
+				});
+			}
+			if (typeof quality.belowPoint1 === 'number' && Number.isFinite(quality.belowPoint1)) {
+				qualityRows.push({
+					metric: localize('mesh.qualityBelowPoint1', "Elements with SICN < 0.1"),
+					value: quality.belowPoint1,
+					target: '0',
+					status: quality.belowPoint1 === 0 ? localize('status.passed', "Passed") : localize('status.warning', "Warning")
+				});
+			}
 		}
 
-		this.inputDisposables.add(MAEngineTables.registerTable({
+		this.qualityTable.value = MAEngineTables.registerTable<IMeshQualityRow>({
 			id: 'maengine.mesh.quality',
 			label: localize('table.meshQuality', "Mesh Quality"),
 			getData: () => ({
@@ -207,7 +261,7 @@ export class MeshEditor extends EditorPane {
 				rows: qualityRows,
 				emptyText: localize('table.meshEmpty', "No mesh quality data available yet. Generate mesh first.")
 			})
-		}));
+		});
 
 		// Render Content Area
 		clearNode(this.contentContainer);
@@ -223,9 +277,14 @@ export class MeshEditor extends EditorPane {
 			append(c, $('span.val', undefined, val));
 		};
 
-		addStat(localize('mesh.statNodes', "Nodes"), hasMesh && typeof nodes === 'number' ? nodes.toLocaleString() : localize('val.na', "n/a"));
-		addStat(localize('mesh.statElements', "Elements"), hasMesh && typeof elements === 'number' ? elements.toLocaleString() : localize('val.na', "n/a"));
-		addStat(localize('mesh.statElementType', "Element Type"), data.elementType ?? "TET10");
+		const naText = localize('val.na', "n/a");
+		const meshOrder = data.meshOrder ?? 2;
+		const elementType = data.elementType ?? (meshOrder === 1 ? 'TET4' : 'TET10');
+		addStat(localize('mesh.statNodes', "Nodes"), hasMesh && typeof nodes === 'number' ? nodes.toLocaleString() : naText);
+		addStat(localize('mesh.statElements', "Elements"), hasMesh && typeof elements === 'number' ? elements.toLocaleString() : naText);
+		addStat(localize('mesh.statElementType', "Element Type"), elementType);
+		addStat(localize('mesh.statMinSicn', "Min SICN"), hasMesh && typeof quality?.min === 'number' && Number.isFinite(quality.min) ? formatSicn(quality.min) : naText);
+		addStat(localize('mesh.statMeanSicn', "Mean SICN"), hasMesh && typeof quality?.mean === 'number' && Number.isFinite(quality.mean) ? formatSicn(quality.mean) : naText);
 
 		// Sizing & Formulation Form Section
 		const formSec = append(this.contentContainer, $('.ma-mesh-section'));
@@ -237,15 +296,17 @@ export class MeshEditor extends EditorPane {
 		const selOrder = append(fOrder, $<HTMLSelectElement>('select'));
 		append(selOrder, $<HTMLOptionElement>('option', { value: '2' }, localize('mesh.quadOrder', "Quadratic (TET10, 10-node)")));
 		append(selOrder, $<HTMLOptionElement>('option', { value: '1' }, localize('mesh.linearOrder', "Linear (TET4, 4-node)")));
-		selOrder.value = String(data.meshOrder ?? 2);
+		selOrder.value = String(meshOrder);
 
 		// Algorithm
 		const fAlgo = append(formSec, $('.ma-mesh-field'));
 		append(fAlgo, $('label', undefined, localize('mesh.algorithm', "Mesher Algorithm")));
 		const selAlgo = append(fAlgo, $<HTMLSelectElement>('select'));
-		append(selAlgo, $<HTMLOptionElement>('option', { value: 'gmsh' }, "Gmsh 3D Frontal-Delaunay"));
-		append(selAlgo, $<HTMLOptionElement>('option', { value: 'netgen' }, "Netgen"));
-		selAlgo.value = data.mesher ?? 'gmsh';
+		append(selAlgo, $<HTMLOptionElement>('option', { value: 'hxt' }, localize('mesh.algoHxt', "HXT (parallel Delaunay, default)")));
+		append(selAlgo, $<HTMLOptionElement>('option', { value: 'delaunay' }, localize('mesh.algoDelaunay', "Delaunay")));
+		append(selAlgo, $<HTMLOptionElement>('option', { value: 'frontal' }, localize('mesh.algoFrontal', "Frontal")));
+		const algorithm = data.algorithm && (MESH_ALGORITHMS as readonly string[]).includes(data.algorithm) ? data.algorithm : 'hxt';
+		selAlgo.value = algorithm;
 
 		// Sizing Inputs
 		const fSizes = append(formSec, $('.ma-mesh-field-row'));
@@ -257,13 +318,13 @@ export class MeshEditor extends EditorPane {
 		const fMin = append(fSizes, $('.ma-mesh-field'));
 		append(fMin, $('label', undefined, localize('mesh.minSize', "Min Size (mm)")));
 		const inpMin = append(fMin, $<HTMLInputElement>('input', { type: 'number', step: '0.5' }));
-		inpMin.value = String(data.minSize ?? 2);
+		inpMin.value = String(data.minSize ?? 1);
 
 		const fMaxRow = append(formSec, $('.ma-mesh-field-row'));
 		const fMax = append(fMaxRow, $('.ma-mesh-field'));
 		append(fMax, $('label', undefined, localize('mesh.maxSize', "Max Size (mm)")));
 		const inpMax = append(fMax, $<HTMLInputElement>('input', { type: 'number', step: '0.5' }));
-		inpMax.value = String(data.maxSize ?? 15);
+		inpMax.value = String(data.maxSize ?? 10);
 
 		// Optimization flags
 		const optSec = append(formSec, $('.ma-mesh-field'));
@@ -274,10 +335,10 @@ export class MeshEditor extends EditorPane {
 		chkHighOrder.checked = data.optimizeHighOrder ?? true;
 		append(chkHighOrderRow, $('span', undefined, localize('mesh.optHighOrder', "High-order elastic optimization")));
 
-		const chkConformalRow = append(optSec, $<HTMLLabelElement>('label.ma-mesh-checkbox-row'));
-		const chkConformal = append(chkConformalRow, $<HTMLInputElement>('input', { type: 'checkbox' }));
-		chkConformal.checked = data.conformalInterface ?? true;
-		append(chkConformalRow, $('span', undefined, localize('mesh.optConformal', "Multi-body conformal interface")));
+		const conformalNote = append(optSec, $('span', undefined, localize('mesh.conformalNote', "Touching bodies are always meshed with shared (conformal) nodes.")));
+		conformalNote.style.fontSize = 'var(--ma-font-xs, 11px)';
+		conformalNote.style.color = 'var(--ma-muted, var(--vscode-descriptionForeground))';
+		conformalNote.style.marginTop = '4px';
 
 		// Actions bar
 		const actBar = append(formSec, $('.ma-mesh-actions-bar'));
@@ -290,12 +351,11 @@ export class MeshEditor extends EditorPane {
 			}
 			this.currentData.meshOrder = Number(selOrder.value);
 			this.currentData.elementType = selOrder.value === '2' ? 'TET10' : 'TET4';
-			this.currentData.mesher = selAlgo.value;
+			this.currentData.algorithm = selAlgo.value;
 			this.currentData.globalSize = Number(inpGlobal.value);
 			this.currentData.minSize = Number(inpMin.value);
 			this.currentData.maxSize = Number(inpMax.value);
 			this.currentData.optimizeHighOrder = chkHighOrder.checked;
-			this.currentData.conformalInterface = chkConformal.checked;
 
 			await this.fileService.writeFile(this.currentResource, VSBuffer.fromString(JSON.stringify(this.currentData, null, '\t')));
 			this.notificationService.info(localize('mesh.saved', "Mesh sizing applied."));
@@ -307,18 +367,22 @@ export class MeshEditor extends EditorPane {
 
 	private updateProperties(): void {
 		const data = this.currentData ?? {};
-		const hasMesh = this.currentStatus?.state === 'done';
-		const statusText = hasMesh ? (data.status ?? "meshed") : "not meshed";
+		const isStale = this.currentStatus?.state === 'stale';
+		const hasMesh = this.currentStatus?.state === 'done' || isStale;
+		const statusText = isStale ? 'out of date' : hasMesh ? (data.status ?? "meshed") : "not meshed";
+		const meshOrder = data.meshOrder ?? 2;
+		const elementType = data.elementType ?? (meshOrder === 1 ? 'TET4' : 'TET10');
 		this.propertiesDockService.setProperties({
 			title: localize('mesh.propertiesTitle', "Mesh Configuration"),
-			detail: data.elementType ?? "TET10",
+			detail: elementType,
 			rows: [
 				{ name: localize('prop.mesher', "Mesher Engine"), value: data.mesher ?? "gmsh" },
-				{ name: localize('prop.elementType', "Element Formulation"), value: data.elementType ?? "TET10" },
-				{ name: localize('prop.meshOrder', "Polynomial Order"), value: String(data.meshOrder ?? 2) },
+				{ name: localize('prop.algorithm', "Mesher Algorithm"), value: data.algorithm ?? "hxt" },
+				{ name: localize('prop.elementType', "Element Formulation"), value: elementType },
+				{ name: localize('prop.meshOrder', "Polynomial Order"), value: String(meshOrder) },
 				{ name: localize('prop.globalSize', "Global Size"), value: `${data.globalSize ?? 10} mm` },
-				{ name: localize('prop.minSize', "Min Element Size"), value: `${data.minSize ?? 2} mm` },
-				{ name: localize('prop.maxSize', "Max Element Size"), value: `${data.maxSize ?? 15} mm` },
+				{ name: localize('prop.minSize', "Min Element Size"), value: `${data.minSize ?? 1} mm` },
+				{ name: localize('prop.maxSize', "Max Element Size"), value: `${data.maxSize ?? 10} mm` },
 				{ name: localize('prop.status', "Mesh Status"), value: statusText }
 			]
 		});

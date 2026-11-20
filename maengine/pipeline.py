@@ -127,6 +127,8 @@ class SimulationPipeline:
             mesh_file_rel_path=rel_mesh,
             output_inp_path=self.deck_path,
             nset_node_counts=node_counts,
+            sections=getattr(self, "sections", None),
+            eall_members=getattr(self, "eall_members", None),
         )
 
     def solve(

@@ -441,6 +441,13 @@ export async function derivePartStatus(
 			}
 
 			if (meshExists) {
+				const outdated = await meshOutdatedBy(project, fileService, data);
+				if (outdated.length > 0) {
+					return {
+						part: part.id, state: 'stale', text: localize('partStatus.outOfDate', "out of date"),
+						hint: localize('partStatus.changedSinceMesh', "Changed since the mesh was made: {0}", outdated.join(', ')),
+					};
+				}
 				const elementCount = data.elementCount ?? data.numElements ?? data.totalElements ?? (typeof data.elements === 'number' ? data.elements : undefined);
 				if (typeof elementCount === 'number' && elementCount > 0) {
 					return {
@@ -456,15 +463,14 @@ export async function derivePartStatus(
 		}
 
 		case 'physics': {
-			if (equalsDefault) {
-				return { part: part.id, state: 'defaults', text: localize('partStatus.defaults', "defaults") };
-			}
 			const bcs = Array.isArray(data.constraints) ? data.constraints.length : 0;
 			const lds = Array.isArray(data.loads) ? data.loads.length : 0;
-			if (bcs > 0 || lds > 0) {
+			if (equalsDefault || bcs > 0 || lds > 0) {
+				// The template's default loads name template selectors, so they need the same check:
+				// after a new CAD model they may pick no face at all.
 				const geometryPart = PROJECT_PARTS.find(p => p.id === 'geometry')!;
 				const geometry = await readJson(fileService, joinPath(project.root, geometryPart.folder, geometryPart.mainFile));
-				const problems = physicsProblems(data, selectorNamesOf(geometry));
+				const problems = studyPhysicsProblems(data, geometry);
 				if (problems.length > 0) {
 					return {
 						part: part.id,
@@ -472,6 +478,9 @@ export async function derivePartStatus(
 						text: localize('partStatus.needsAttention', "needs attention"),
 						hint: problems.join('; '),
 					};
+				}
+				if (equalsDefault) {
+					return { part: part.id, state: 'defaults', text: localize('partStatus.defaults', "defaults") };
 				}
 				const bcText = `${bcs} BC${bcs === 1 ? '' : 's'}`;
 				const loadText = `${lds} load${lds === 1 ? '' : 's'}`;
@@ -778,7 +787,7 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
  * Problems that stop the engine from running the study's physics, mirroring the checks in
  * `maengine/project_bridge.py` (load_study). Empty when the physics can run.
  */
-export function physicsProblems(physics: any, selectorNames: readonly string[]): string[] {
+export function physicsProblems(physics: any, selectorNames: readonly string[], picks?: ReadonlyMap<string, number[] | undefined>): string[] {
 	const problems: string[] = [];
 	const names = new Set(selectorNames);
 	const checkSelector = (kind: string, id: string, selector: unknown) => {
@@ -786,6 +795,8 @@ export function physicsProblems(physics: any, selectorNames: readonly string[]):
 			problems.push(localize('physics.problem.noSelector', "{0} '{1}' has no selector", kind, id));
 		} else if (!names.has(selector)) {
 			problems.push(localize('physics.problem.missingSelector', "selector '{0}' is not defined in Geometry", selector));
+		} else if (picks?.get(selector)?.length === 0) {
+			problems.push(localize('physics.problem.noFace', "selector '{0}' picks no face of the current geometry", selector));
 		}
 	};
 	const constraints: any[] = Array.isArray(physics?.constraints) ? physics.constraints : [];
@@ -839,6 +850,54 @@ export function physicsProblems(physics: any, selectorNames: readonly string[]):
  * Empty when there is no run to compare with or nothing changed. Run outputs that the engine
  * writes itself (solver.json, results.json) are not inputs.
  */
+/** Mesh settings the engine records in `meshedWith` (keep in step with MESH_SETTING_KEYS in project_bridge.py). */
+const MESH_SETTING_KEYS = ['meshOrder', 'minSize', 'maxSize', 'globalSize', 'optimizeHighOrder', 'algorithm'];
+
+/**
+ * Why the study's mesh no longer matches its inputs, mirroring `_mesh_is_current` in the engine:
+ * the CAD file or geometry.json (selectors become mesh sets) is newer than the mesh file, or the
+ * mesh settings differ from the ones it was made with. Empty when the mesh is current.
+ */
+export async function meshOutdatedBy(project: IMechastudioProject, fileService: IFileService, meshData: any): Promise<string[]> {
+	const meshPart = PROJECT_PARTS.find(p => p.id === 'mesh')!;
+	const geometryPart = PROJECT_PARTS.find(p => p.id === 'geometry')!;
+	const meshName = typeof meshData?.meshFile === 'string' ? meshData.meshFile : 'model_mesh.inp';
+	let meshTime: number;
+	try {
+		meshTime = (await fileService.stat(joinPath(project.root, meshPart.folder, meshName))).mtime;
+	} catch {
+		return [];
+	}
+	const reasons: string[] = [];
+	const geometryUri = joinPath(project.root, geometryPart.folder, geometryPart.mainFile);
+	const geometry = await readJson(fileService, geometryUri);
+	const newer = async (uri: URI) => {
+		try {
+			return (await fileService.stat(uri)).mtime > meshTime;
+		} catch {
+			return false;
+		}
+	};
+	if (typeof geometry?.cadFile === 'string' && geometry.cadFile && await newer(joinPath(project.root, geometryPart.folder, geometry.cadFile))) {
+		reasons.push(localize('stale.cad', "CAD file"));
+	}
+	if (await newer(geometryUri)) {
+		reasons.push(localize('stale.geometry', "Geometry"));
+	}
+	if (meshData && typeof meshData.meshedWith === 'object' && meshData.meshedWith !== null) {
+		const current: Record<string, unknown> = {};
+		for (const k of MESH_SETTING_KEYS) {
+			if (k in meshData) {
+				current[k] = meshData[k];
+			}
+		}
+		if (JSON.stringify(current) !== JSON.stringify(meshData.meshedWith)) {
+			reasons.push(localize('stale.meshSettings', "mesh settings"));
+		}
+	}
+	return reasons;
+}
+
 export async function inputsChangedSinceRun(project: IMechastudioProject, fileService: IFileService): Promise<string[]> {
 	const partFile = (id: string) => {
 		const part = PROJECT_PARTS.find(p => p.id === id)!;
@@ -882,6 +941,38 @@ export async function inputsChangedSinceRun(project: IMechastudioProject, fileSe
 		}
 	}
 	return changed;
+}
+
+/** Face tolerance the engine uses when it picks faces with a selector box. */
+const BOX_TOLERANCE = 1e-6;
+
+/**
+ * Which faces each box selector picks on the model as last read (geometry.json `faces`).
+ * A selector maps to undefined when the faces are not known yet (the model was not read).
+ */
+export function selectorPicks(geometry: any): Map<string, number[] | undefined> {
+	const picks = new Map<string, number[] | undefined>();
+	const faces: any[] | undefined = Array.isArray(geometry?.faces) ? geometry.faces : undefined;
+	for (const sel of Array.isArray(geometry?.selectors) ? geometry.selectors : []) {
+		if (typeof sel?.name !== 'string') {
+			continue;
+		}
+		const b = sel.bounds;
+		if (!faces || !Array.isArray(b) || b.length !== 6 || !b.every(isNum)) {
+			picks.set(sel.name, undefined);
+			continue;
+		}
+		picks.set(sel.name, faces.filter(f => Array.isArray(f?.bounds) && f.bounds.length === 6
+			&& f.bounds[0] >= b[0] - BOX_TOLERANCE && f.bounds[1] >= b[1] - BOX_TOLERANCE && f.bounds[2] >= b[2] - BOX_TOLERANCE
+			&& f.bounds[3] <= b[3] + BOX_TOLERANCE && f.bounds[4] <= b[4] + BOX_TOLERANCE && f.bounds[5] <= b[5] + BOX_TOLERANCE
+		).map(f => f.tag));
+	}
+	return picks;
+}
+
+/** physicsProblems for a study, with the selectors and their picked faces read from geometry.json. */
+export function studyPhysicsProblems(physics: any, geometry: any): string[] {
+	return physicsProblems(physics, selectorNamesOf(geometry), selectorPicks(geometry));
 }
 
 export function selectorNamesOf(geometry: any): string[] {
@@ -960,7 +1051,7 @@ export async function resolveRunTarget(
 
 	if (stage === 'solve') {
 		const physics = await readJson(fileService, joinPath(root, part('physics').folder, part('physics').mainFile));
-		const problems = physicsProblems(physics, selectorNamesOf(geometry));
+		const problems = studyPhysicsProblems(physics, geometry);
 		if (problems.length > 0) {
 			return fail(localize('run.physics', "Boundary Conditions & Loads: {0}", problems[0]));
 		}

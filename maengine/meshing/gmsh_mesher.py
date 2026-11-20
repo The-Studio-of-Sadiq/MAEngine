@@ -116,6 +116,20 @@ class GmshMesher:
         elem_types, elem_tags, _ = gmsh.model.mesh.getElements(dim=3)
         total_3d_elements = sum(len(t) for t in elem_tags)
 
+        # Element quality: signed inverse condition number (1 = ideal, <= 0 = inverted).
+        quality = None
+        all_3d = [int(t) for tags in elem_tags for t in tags]
+        if all_3d:
+            sicn = gmsh.model.mesh.getElementQualities(all_3d, "minSICN")
+            if len(sicn):
+                quality = {
+                    "metric": "SICN",
+                    "min": float(min(sicn)),
+                    "mean": float(sum(sicn) / len(sicn)),
+                    "belowPoint1": int(sum(1 for q in sicn if q < 0.1)),
+                    "elementCount": len(sicn),
+                }
+
         # 9. Clean up and append CalculiX-compatible *NSET and *SURFACE definitions to .inp file
         surface_face_counts: Dict[str, int] = {}
         nset_node_counts: Dict[str, int] = {}
@@ -305,6 +319,7 @@ class GmshMesher:
             "output_file": output_mesh_path,
             "surface_face_counts": surface_face_counts,
             "nset_node_counts": nset_node_counts,
+            "quality": quality,
         }
 
         return stats
